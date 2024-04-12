@@ -5,10 +5,15 @@ option java_multiple_files = true;
 service DHTService {
   rpc read(ReadRequest) returns (stream ReadResponse);
   rpc write(stream WriteRequest) returns (WriteResponse);
+  rpc echoMsg(Message) returns (Message);
 }
 
 message ReadRequest {
   string hash = 1;
+}
+
+message Message {
+  string data = 1;
 }
 
 message ReadResponse {
@@ -21,8 +26,8 @@ message ReadResponse {
 
 message WriteRequest {
   string hash = 1;
-  bytes data = 2;
-  bool more = 3;
+  int64 offset = 2;
+  bytes data = 3;
 }
 
 message WriteResponse {

@@ -15,12 +15,12 @@ public class FileMap {
         this.baseDirectory = directory + "/";
     }
 
-    public boolean read(String hash, long offset, byte[] buffer, int count) throws FileNotFoundException, IOException {
+    public int read(String hash, long offset, byte[] buffer) throws FileNotFoundException, IOException {
         try (RandomAccessFile file = new RandomAccessFile(this.baseDirectory + hash, "r")) {
             file.seek(offset);
             int result = file.read(buffer);
 
-            return result > 0;
+            return result;
         }
     }
 
