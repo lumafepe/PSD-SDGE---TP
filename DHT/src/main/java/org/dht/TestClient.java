@@ -2,19 +2,13 @@ package org.dht;
 
 import com.google.protobuf.ByteString;
 import dht.messages.*;
-import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.stub.StreamObserver;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.security.SecureRandom;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,13 +21,11 @@ public class TestClient {
     public static Iterable<WriteRequest> readFile(String file, int chunkSize) {
         List<WriteRequest> result = new ArrayList<>();
         try (FileInputStream inputStream = new FileInputStream(file)) {
-            byte[] buffer = new byte[chunkSize]; // 4KB buffer
+            byte[] buffer = new byte[chunkSize];
 
             int bytesRead;
             long offset = 0;
             while ((bytesRead = inputStream.read(buffer)) != -1) {
-                // Process the chunk of data here
-
                 result.add(WriteRequest.newBuilder()
                         .setHash("asdasdd")
                         .setData(ByteString.copyFrom(buffer.clone()))
