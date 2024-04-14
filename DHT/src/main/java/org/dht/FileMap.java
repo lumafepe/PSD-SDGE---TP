@@ -1,5 +1,7 @@
 package org.dht;
 
+import org.dht.exceptions.IOErrorException;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,10 +26,12 @@ public class FileMap {
         }
     }
 
-    public void write(String hash, long offset, byte[] data) throws FileNotFoundException, IOException {
+    public void write(String hash, long offset, byte[] data) throws IOErrorException {
         try (RandomAccessFile file = new RandomAccessFile(this.baseDirectory + hash, "rw")) {
             file.seek(offset);
             file.write(data);
+        } catch(IOException e) {
+            throw new IOErrorException(e);
         }
     }
 }

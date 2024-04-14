@@ -5,6 +5,7 @@ import dht.messages.*;
 import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.dht.exceptions.IOErrorException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileNotFoundException;
@@ -30,13 +31,7 @@ public class DHTController {
             return WriteResponse.newBuilder()
                     .setSuccess(Status.SUCCESS)
                     .build();
-        } catch(FileNotFoundException e) {
-            logger.error("An exception occurred: ", e);
-            return WriteResponse.newBuilder()
-                    .setSuccess(Status.IO_ERROR)
-                    .setMessage("Unable to create file")
-                    .build();
-        } catch(IOException e) {
+        } catch(IOErrorException e) {
             logger.error("An exception occurred: ", e);
             return WriteResponse.newBuilder()
                     .setSuccess(Status.IO_ERROR)
