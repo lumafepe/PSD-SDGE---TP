@@ -1,10 +1,7 @@
 package org.dht;
 
 import com.google.protobuf.ByteString;
-import dht.messages.Message;
-import dht.messages.Rx3DHTServiceGrpc;
-import dht.messages.WriteRequest;
-import dht.messages.WriteResponse;
+import dht.messages.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
@@ -13,7 +10,9 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.security.SecureRandom;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -48,7 +47,7 @@ public class TestClient {
         return result;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         var channel = ManagedChannelBuilder.forAddress("localhost", 4200)
                 .usePlaintext()
                 .build();
@@ -58,6 +57,17 @@ public class TestClient {
                 .map(m -> m.getSuccessValue())
                 .map(n -> "Result: " + n)
                 .blockingSubscribe(System.out::println);
+
+        FileOutputStream file = new FileOutputStream("/home/ruioliveira02/Pictures/teste213.jpg");
+        stub.read(Single.just(ReadRequest.newBuilder().setHash("asdasdd").build())
+                )
+                .map(m -> {
+                    file.write(m.getData().toByteArray());
+                    return m.getSuccess();
+                })
+                .blockingSubscribe(System.out::println);
+        file.close();
+
         /*stub.echoMsg(Single.just("Hello")
                         .map(n -> Message.newBuilder().setData(n).build())
                 )

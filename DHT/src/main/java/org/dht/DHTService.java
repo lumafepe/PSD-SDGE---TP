@@ -16,8 +16,8 @@ public class DHTService extends Rx3DHTServiceGrpc.DHTServiceImplBase {
     }
 
     public Flowable<ReadResponse> read(Single<ReadRequest> request) {
-        return request.toFlowable()
-                .flatMap(req -> controller.read(req));
+        return request.toFlowable().flatMap(this.controller::read)
+                .subscribeOn(Schedulers.io());
     }
 
     public Single<WriteResponse> write(Flowable<WriteRequest> requests) {

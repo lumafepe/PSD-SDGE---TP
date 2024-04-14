@@ -2,12 +2,14 @@ package org.dht;
 
 import com.google.protobuf.ByteString;
 import dht.messages.*;
+import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dht.exceptions.IOErrorException;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Iterator;
@@ -21,7 +23,31 @@ public class DHTController {
     }
 
     public Flowable<ReadResponse> read(ReadRequest request) {
-        return Flowable.fromIterable(doReads(request.getHash()));
+        return Flowable.create(sub -> {
+            try(FileInputStream stream = new FileInputStream(
+                    "/home/ruioliveira02/Documents/Projetos/PSD-SDGE---TP/DHT/test_data/" + request.getHash())) {
+                byte[] buffer = new byte[4096];
+                while(stream.read(buffer) != -1) {
+                    sub.onNext(ReadResponse.newBuilder()
+                            .setSuccess(Status.SUCCESS)
+                            .setData(ByteString.copyFrom(buffer))
+                            .build());
+                }
+                sub.onComplete();
+            } catch(FileNotFoundException e) {
+                sub.onNext(ReadResponse.newBuilder()
+                        .setSuccess(Status.HASH_NOT_FOUND)
+                        .setMessage("Hash does not exist")
+                        .build());
+                sub.onComplete();
+            } catch (IOException e) {
+                sub.onNext(ReadResponse.newBuilder()
+                        .setSuccess(Status.IO_ERROR)
+                        .setMessage("Unable to complete I/O")
+                        .build());
+                sub.onComplete();
+            }
+        }, BackpressureStrategy.BUFFER);
     }
 
     public WriteResponse write(WriteRequest request) {
@@ -45,51 +71,5 @@ public class DHTController {
             return r1;
         }
         return r2;
-    }
-
-    public Iterable<ReadResponse> doReads(String hash) {
-        return new Iterable<ReadResponse>() {
-            @NotNull
-            @Override
-            public Iterator<ReadResponse> iterator() {
-                return new Iterator<ReadResponse>() {
-                    long offset = 0;
-                    boolean hasMore = false;
-                    @Override
-                    public boolean hasNext() {
-                        return hasMore;
-                    }
-
-                    @Override
-                    public ReadResponse next() {
-                        //TODO: Configurable parameters
-                        byte[] buffer = new byte[4096];
-                        try {
-                            int bytes = map.read(hash, offset, buffer);
-                            hasMore = bytes == 4096;
-                            return ReadResponse.newBuilder()
-                                    .setSuccess(Status.SUCCESS)
-                                    .setData(ByteString.copyFrom(buffer))
-                                    .setMoreData(hasMore)
-                                    .build();
-                        } catch(FileNotFoundException e) {
-                            hasMore = false;
-                            logger.error("An exception occurred: ", e);
-                            return ReadResponse.newBuilder()
-                                    .setSuccess(Status.HASH_NOT_FOUND)
-                                    .setMessage("Hash does not exist")
-                                    .build();
-                        } catch(IOException e) {
-                            hasMore = false;
-                            logger.error("An exception occurred: ", e);
-                            return ReadResponse.newBuilder()
-                                    .setSuccess(Status.IO_ERROR)
-                                    .setMessage("I/O Error")
-                                    .build();
-                        }
-                    }
-                };
-            }
-        };
     }
 }
