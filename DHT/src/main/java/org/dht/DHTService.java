@@ -11,8 +11,8 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class DHTService extends Rx3DHTServiceGrpc.DHTServiceImplBase {
     private DHTController controller;
 
-    public DHTService(FileMap map) {
-        this.controller = new DHTController(map);
+    public DHTService() {
+        this.controller = new DHTController();
     }
 
     public Flowable<ReadResponse> read(Single<ReadRequest> request) {

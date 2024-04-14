@@ -9,10 +9,20 @@ import java.io.IOException;
 
 public class Main {
     private static final Logger logger = LogManager.getLogger();
+    private static final ConfigManager configManager = ConfigManager.getInstance();
+
     public static void main(String[] args) throws IOException, InterruptedException {
         logger.info("Starting DHT Node");
-        ServerBuilder.forPort(4200)
-                .addService(new DHTService(new FileMap("/home/ruioliveira02/Documents/Projetos/PSD-SDGE---TP/DHT/test_data")))
+
+        try {
+            configManager.parseConfig(args);
+        } catch(IllegalArgumentException e) {
+            logger.fatal(e.getMessage());
+            return;
+        }
+
+        ServerBuilder.forPort(configManager.getPort())
+                .addService(new DHTService())
                 .build()
                 .start()
                 .awaitTermination();

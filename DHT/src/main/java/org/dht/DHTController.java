@@ -6,26 +6,26 @@ import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.dht.exceptions.IOErrorException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.Iterator;
 
 public class DHTController {
-    private FileMap map;
     private static final Logger logger = LogManager.getLogger();
+    private static final ConfigManager configManager = ConfigManager.getInstance();
 
-    public DHTController(FileMap map) {
-        this.map = map;
-    }
+
+    public DHTController() {}
 
     public Flowable<ReadResponse> read(ReadRequest request) {
         return Flowable.create(sub -> {
             try(FileInputStream stream = new FileInputStream(
-                    "/home/ruioliveira02/Documents/Projetos/PSD-SDGE---TP/DHT/test_data/" + request.getHash())) {
+                    configManager.getBaseDirectory() + request.getHash())) {
+                logger.info("ReadRequest Hash: {}", request.getHash());
                 byte[] buffer = new byte[4096];
                 while(stream.read(buffer) != -1) {
                     sub.onNext(ReadResponse.newBuilder()
@@ -52,12 +52,14 @@ public class DHTController {
 
     public WriteResponse write(WriteRequest request) {
         logger.info("WriteRequest Hash: {} Offset_ {}", request.getHash(), request.getOffset());
-        try {
-            this.map.write(request.getHash(), request.getOffset(), request.getData().toByteArray());
+        try (RandomAccessFile file = new RandomAccessFile(configManager.getBaseDirectory() + request.getHash(), "rw")) {
+            file.seek(request.getOffset());
+            file.write(request.getData().toByteArray());
+
             return WriteResponse.newBuilder()
                     .setSuccess(Status.SUCCESS)
                     .build();
-        } catch(IOErrorException e) {
+        } catch(IOException e) {
             logger.error("An exception occurred: ", e);
             return WriteResponse.newBuilder()
                     .setSuccess(Status.IO_ERROR)
