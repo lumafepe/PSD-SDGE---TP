@@ -5,6 +5,7 @@
 start(Port) ->
     account_manager:start(),
     album_manager:start(),
+    dht_manager:start(),
     {ok, LSock} = gen_tcp:listen(Port, [binary, {active, once}, {packet, 0}, {reuseaddr, true}]),
     spawn(fun() -> acceptor(LSock) end),
     ok.
