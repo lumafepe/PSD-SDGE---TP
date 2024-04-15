@@ -1,0 +1,40 @@
+syntax = "proto2";
+
+package Protos;
+
+message Message {
+    required Type type = 1;
+    optional Register register = 2;
+    optional Login login = 3;
+    optional Reply reply = 4;
+    optional AlbumCreate albumCreate = 5;
+}
+
+enum Type {
+    REGISTER = 0;
+    LOGIN = 1;
+    LOGOUT = 2;
+    REPLY = 3;
+    ALBUMSLIST = 4;
+    ALBUMCREATE = 5;
+}
+
+message Register {
+    required string username = 1;
+    required string password = 2;
+}
+
+message Login {
+    required string username = 1;
+    required string password = 2;
+}
+
+message Reply {
+    required bool result = 1;
+    required string message = 2;
+}
+
+message AlbumCreate {
+    required string name = 1;
+}
+
