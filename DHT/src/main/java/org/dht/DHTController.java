@@ -13,15 +13,28 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Iterator;
+import java.util.concurrent.Flow;
 
 public class DHTController {
     private static final Logger logger = LogManager.getLogger();
     private static final ConfigManager configManager = ConfigManager.getInstance();
 
+    private MetadataManager metadataManager;
 
-    public DHTController() {}
+
+    public DHTController() {
+        metadataManager = new MetadataManager();
+    }
 
     public Flowable<ReadResponse> read(ReadRequest request) {
+        if(!metadataManager.isReadAuthoritative(request.getHash())) {
+            logger.info("ReadRequest Hash: {} - not authoritative", request.getHash());
+            return Flowable.just(ReadResponse.newBuilder()
+                    .setSuccess(Status.HASH_NOT_FOUND)
+                    .setMessage("Not authoritative for hash " + request.getHash())
+                    .build());
+        }
+
         return Flowable.create(sub -> {
             try(FileInputStream stream = new FileInputStream(
                     configManager.getBaseDirectory() + request.getHash())) {
@@ -41,6 +54,7 @@ public class DHTController {
                         .build());
                 sub.onComplete();
             } catch (IOException e) {
+                logger.error("An exception occurred: ", e);
                 sub.onNext(ReadResponse.newBuilder()
                         .setSuccess(Status.IO_ERROR)
                         .setMessage("Unable to complete I/O")
@@ -51,7 +65,15 @@ public class DHTController {
     }
 
     public WriteResponse write(WriteRequest request) {
-        logger.info("WriteRequest Hash: {} Offset_ {}", request.getHash(), request.getOffset());
+        if(!metadataManager.isWriteAuthoritative(request.getHash())) {
+            logger.info("WriteRequest Hash: {} - not authoritative", request.getHash());
+            return WriteResponse.newBuilder()
+                    .setSuccess(Status.HASH_NOT_FOUND)
+                    .setMessage("Not authoritative for hash " + request.getHash())
+                    .build();
+        }
+
+        logger.info("WriteRequest Hash: {} Offset: {}", request.getHash(), request.getOffset());
         try (RandomAccessFile file = new RandomAccessFile(configManager.getBaseDirectory() + request.getHash(), "rw")) {
             file.seek(request.getOffset());
             file.write(request.getData().toByteArray());

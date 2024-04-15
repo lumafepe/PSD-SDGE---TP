@@ -11,6 +11,10 @@ public class ConfigManager {
     private int port;
     private String baseDirectory;
 
+    private int tokenCount;
+
+    private long mod;
+
     private ConfigManager() {
         instance = this;
     }
@@ -31,6 +35,14 @@ public class ConfigManager {
         return this.baseDirectory;
     }
 
+    public int getTokenCount() {
+        return tokenCount;
+    }
+
+    public long getMod() {
+        return mod;
+    }
+
     public void parseConfig(String[] args) throws IllegalArgumentException {
         if(args.length % 2 == 1)
             throw new IllegalArgumentException("Number of arguments must be odd");
@@ -40,6 +52,10 @@ public class ConfigManager {
                 this.port = Integer.parseInt(args[i + 1]);
             } else if(args[i].equals("-b")) {
                 this.baseDirectory = args[i + 1];
+            } else if(args[i].equals("-t")) {
+                this.tokenCount = Integer.parseInt(args[i + 1]);
+            } else if(args[i].equals("-m")) {
+                this.mod = Long.parseLong(args[i + 1]);
             } else {
                 throw new IllegalArgumentException("Unknown argument " + args[i]);
             }
@@ -51,6 +67,7 @@ public class ConfigManager {
     private void checkArguments() throws IllegalArgumentException {
         checkPort();
         checkBaseDirectory();
+        checkTokenCountAndMod();
     }
 
     private void checkPort() throws IllegalArgumentException {
@@ -66,5 +83,13 @@ public class ConfigManager {
 
         if(!this.baseDirectory.endsWith("/"))
             this.baseDirectory = this.baseDirectory + "/";
+    }
+
+    private void checkTokenCountAndMod() throws IllegalArgumentException {
+        if(this.tokenCount <= 0)
+            throw new IllegalArgumentException("Token count must be positive");
+
+        if(this.mod <= 0)
+            throw new IllegalArgumentException("Mod must be positive");
     }
 }
