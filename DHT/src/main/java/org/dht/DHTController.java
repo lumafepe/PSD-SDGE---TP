@@ -6,17 +6,16 @@ import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
+import org.dht.config.Manager;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Iterator;
 
 public class DHTController {
     private static final Logger logger = LogManager.getLogger();
-    private static final ConfigManager configManager = ConfigManager.getInstance();
+    private static final Manager configManager = Manager.getInstance();
 
 
     public DHTController() {}
@@ -24,7 +23,7 @@ public class DHTController {
     public Flowable<ReadResponse> read(ReadRequest request) {
         return Flowable.create(sub -> {
             try(FileInputStream stream = new FileInputStream(
-                    configManager.getBaseDirectory() + request.getHash())) {
+                    configManager.getDHT().getBaseDirectory() + request.getHash())) {
                 logger.info("ReadRequest Hash: {}", request.getHash());
                 byte[] buffer = new byte[4096];
                 while(stream.read(buffer) != -1) {
@@ -52,7 +51,7 @@ public class DHTController {
 
     public WriteResponse write(WriteRequest request) {
         logger.info("WriteRequest Hash: {} Offset_ {}", request.getHash(), request.getOffset());
-        try (RandomAccessFile file = new RandomAccessFile(configManager.getBaseDirectory() + request.getHash(), "rw")) {
+        try (RandomAccessFile file = new RandomAccessFile(configManager.getDHT().getBaseDirectory() + request.getHash(), "rw")) {
             file.seek(request.getOffset());
             file.write(request.getData().toByteArray());
 
