@@ -20,22 +20,9 @@ album(Socket,Name,Album) ->
     gen_tcp:send(Socket,Reply).
 
 
-number_to_hex(Number) ->
-    IntegerHex = integer_to_list(Number, 16),
-    PadLength = 40 - length(IntegerHex),
-    if
-        PadLength > 0 ->
-            ZeroPadding = string:copies("0", PadLength),
-            ZeroPadding ++ IntegerHex;
-        true ->
-            IntegerHex
-    end.
-
-
 nodes(Socket,Nodes) ->
     _NodesAsListKV = maps:to_list(Nodes),
-    _NodesAsList = lists:map(fun({{Ip,Porta},Tokens}) -> {Ip, Porta ,sets:to_list(Tokens)} end,_NodesAsListKV),
-    _Nodes = lists:map(fun({Ip,Porta,Tokens}) -> {Ip, Porta,lists:map(fun(V) ->number_to_hex(V) end,Tokens)} end,_NodesAsList),
+    _Nodes = lists:map(fun({{Ip,Porta},Tokens}) -> {Ip, Porta ,sets:to_list(Tokens)} end,_NodesAsListKV),
     Values = lists:map(fun({Ip,Porta,Tokens}) -> #{ip=>Ip,port=>Porta,tokens=>Tokens} end,_Nodes),
     Reply = messages:encode_msg(#{type=>'NODESINFO',nodesInfo=>Values}, 'Message'),
     gen_tcp:send(Socket,Reply).
