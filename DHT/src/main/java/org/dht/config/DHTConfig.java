@@ -16,7 +16,7 @@ public class DHTConfig {
 
     public void validate() throws RuntimeException {
 
-        if (this.port <= 0 || this.port >= 65535) {
+        if (this.port < 0 || this.port > 65535) {
             throw new RuntimeException("'port' (" + this.port + ") value must be between 0 and 65535");
         }
 
