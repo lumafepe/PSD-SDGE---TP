@@ -38,11 +38,9 @@ public class MetadataManager {
         }
     }
 
-    public Set<String> getMyTokens() {
-        Set<String> result = new TreeSet<>();
-        for (Long l : this.myTokens)
-            result.add(l.toString());
-
+    public Set<Long> getMyTokens() {
+        Set<Long> result = new TreeSet<>();
+        result.addAll(this.myTokens);
         return result;
     }
 

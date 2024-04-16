@@ -1,6 +1,7 @@
 package org.dht;
 
 import com.google.common.io.ByteStreams;
+import com.google.protobuf.ByteString;
 import dht.messages.central.Message;
 import dht.messages.central.NodeInfo;
 import dht.messages.central.Type;
@@ -13,6 +14,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 public class StartupHandler implements Runnable {
@@ -57,9 +59,7 @@ public class StartupHandler implements Runnable {
                                                                   TreeSet<Long> serverTokens) {
         Map<Long, InetSocketAddress> result = new HashMap<>();
 
-        for(String tokenStr : metadataManager.getMyTokens()) {
-            Long token = Long.parseLong(tokenStr);
-
+        for(Long token : metadataManager.getMyTokens()) {
             Long nextToken = serverTokens.ceiling(token);
             if(nextToken == null)
                 nextToken = serverTokens.first();
@@ -74,11 +74,11 @@ public class StartupHandler implements Runnable {
                               Map<Long, InetSocketAddress> tokenServerMapping, TreeSet<Long> serverTokens) {
 
         for(NodeInfo node : nodeInfos) {
-            InetSocketAddress address = new InetSocketAddress(node.getIp(), Integer.parseInt(node.getPort()));
+            InetSocketAddress address = new InetSocketAddress(node.getIp(), node.getPort());
             List<Long> nodeTokens = new ArrayList<>();
 
             for(int i = 0; i < node.getTokensCount(); i++) {
-                Long token = Long.parseLong(node.getTokens(i));
+                Long token = node.getTokens(i);
                 nodeTokens.add(token);
                 serverTokens.add(token);
                 tokenServerMapping.put(token, address);
@@ -90,7 +90,7 @@ public class StartupHandler implements Runnable {
     private void copyData(Map<Long, InetSocketAddress> serversToContact) {
         Logger logger = LogManager.getLogger();
         for(Map.Entry<Long, InetSocketAddress> entry : serversToContact.entrySet()) {
-            logger.info("Transfering from ", entry.getValue().toString());
+            logger.info("Transfering from " + entry.getValue().toString());
         }
     }
 
@@ -107,7 +107,9 @@ public class StartupHandler implements Runnable {
         //TODO: Change
         try(Socket clientSocket = new Socket("127.0.0.1", 4321)) {
             clientSocket.getOutputStream().write(msg.toByteArray());
-            Message response = Message.parseFrom(clientSocket.getInputStream());
+            byte[] buffer = new byte[1048576];
+            int read = clientSocket.getInputStream().read(buffer);
+            Message response = Message.parseFrom(ByteBuffer.wrap(buffer, 0, read));
             return response;
         } catch(UnknownHostException e) {
             logger.fatal("An exception occurred when sending message to central server: ", e);

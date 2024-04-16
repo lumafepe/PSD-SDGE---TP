@@ -14,7 +14,7 @@ message Message {
     optional Album album = 8;
     optional NodeInfo nodeInfo = 9;
     repeated NodeInfo nodesInfo = 10;
-    optional string token = 11;
+    optional uint64 token = 11;
     optional NodeIp nodeIp = 12;
 }
 
@@ -70,11 +70,11 @@ message Album {
 
 message NodeInfo{
     string ip = 1;
-    string port = 2;
-    repeated string tokens = 3;
+    uint32 port = 2;
+    repeated uint64 tokens = 3;
 }
 
 message NodeIp{
     string ip = 1;
-    string port = 2;
+    uint32 port = 2;
 }
