@@ -50,12 +50,12 @@
 
 
 %% enumerated types
--type 'Type'() :: 'REGISTER' | 'LOGIN' | 'LOGOUT' | 'SUCESIUM' | 'ERRORREPLY' | 'ALBUMSLIST' | 'ALBUMCREATE' | 'ALBUM' | 'ALBUMS' | 'ALBUMGET' | 'STARTENTRANCE' | 'ENDENTRANCE' | 'NODESINFO'.
+-type 'Type'() :: 'REGISTER' | 'LOGIN' | 'LOGOUT' | 'SUCESIUM' | 'ERRORREPLY' | 'ALBUMSLIST' | 'ALBUMCREATE' | 'ALBUM' | 'ALBUMS' | 'ALBUMGET' | 'STARTENTRANCE' | 'ENDENTRANCE' | 'NODESINFO' | 'READ' | 'WRITE' | 'NODEIP'.
 -export_type(['Type'/0]).
 
 %% message types
 -type 'Message'() ::
-      #{type                    => 'REGISTER' | 'LOGIN' | 'LOGOUT' | 'SUCESIUM' | 'ERRORREPLY' | 'ALBUMSLIST' | 'ALBUMCREATE' | 'ALBUM' | 'ALBUMS' | 'ALBUMGET' | 'STARTENTRANCE' | 'ENDENTRANCE' | 'NODESINFO' | integer(), % = 1, optional, enum Type
+      #{type                    => 'REGISTER' | 'LOGIN' | 'LOGOUT' | 'SUCESIUM' | 'ERRORREPLY' | 'ALBUMSLIST' | 'ALBUMCREATE' | 'ALBUM' | 'ALBUMS' | 'ALBUMGET' | 'STARTENTRANCE' | 'ENDENTRANCE' | 'NODESINFO' | 'READ' | 'WRITE' | 'NODEIP' | integer(), % = 1, optional, enum Type
         register                => 'Register'(),    % = 2, optional
         login                   => 'Login'(),       % = 3, optional
         reply                   => 'ErrorReply'(),  % = 4, optional
@@ -64,7 +64,9 @@
         albums                  => 'Albums'(),      % = 7, optional
         album                   => 'Album'(),       % = 8, optional
         nodeInfo                => 'NodeInfo'(),    % = 9, optional
-        nodesInfo               => ['NodeInfo'()]   % = 10, repeated
+        nodesInfo               => ['NodeInfo'()],  % = 10, repeated
+        token                   => unicode:chardata(), % = 11, optional
+        nodeIp                  => 'NodeIp'()       % = 12, optional
        }.
 
 -type 'Register'() ::
@@ -104,9 +106,14 @@
         tokens                  => [unicode:chardata()] % = 3, repeated
        }.
 
--export_type(['Message'/0, 'Register'/0, 'Login'/0, 'ErrorReply'/0, 'AlbumCreate'/0, 'AlbumGet'/0, 'Albums'/0, 'Album'/0, 'NodeInfo'/0]).
--type '$msg_name'() :: 'Message' | 'Register' | 'Login' | 'ErrorReply' | 'AlbumCreate' | 'AlbumGet' | 'Albums' | 'Album' | 'NodeInfo'.
--type '$msg'() :: 'Message'() | 'Register'() | 'Login'() | 'ErrorReply'() | 'AlbumCreate'() | 'AlbumGet'() | 'Albums'() | 'Album'() | 'NodeInfo'().
+-type 'NodeIp'() ::
+      #{ip                      => unicode:chardata(), % = 1, optional
+        port                    => unicode:chardata() % = 2, optional
+       }.
+
+-export_type(['Message'/0, 'Register'/0, 'Login'/0, 'ErrorReply'/0, 'AlbumCreate'/0, 'AlbumGet'/0, 'Albums'/0, 'Album'/0, 'NodeInfo'/0, 'NodeIp'/0]).
+-type '$msg_name'() :: 'Message' | 'Register' | 'Login' | 'ErrorReply' | 'AlbumCreate' | 'AlbumGet' | 'Albums' | 'Album' | 'NodeInfo' | 'NodeIp'.
+-type '$msg'() :: 'Message'() | 'Register'() | 'Login'() | 'ErrorReply'() | 'AlbumCreate'() | 'AlbumGet'() | 'Albums'() | 'Album'() | 'NodeInfo'() | 'NodeIp'().
 -export_type(['$msg_name'/0, '$msg'/0]).
 
 -if(?OTP_RELEASE >= 24).
@@ -134,7 +141,8 @@ encode_msg(Msg, MsgName, Opts) ->
         'AlbumGet' -> encode_msg_AlbumGet(id(Msg, TrUserData), TrUserData);
         'Albums' -> encode_msg_Albums(id(Msg, TrUserData), TrUserData);
         'Album' -> encode_msg_Album(id(Msg, TrUserData), TrUserData);
-        'NodeInfo' -> encode_msg_NodeInfo(id(Msg, TrUserData), TrUserData)
+        'NodeInfo' -> encode_msg_NodeInfo(id(Msg, TrUserData), TrUserData);
+        'NodeIp' -> encode_msg_NodeIp(id(Msg, TrUserData), TrUserData)
     end.
 
 
@@ -184,13 +192,21 @@ encode_msg_Message(#{} = M, Bin, TrUserData) ->
              #{nodeInfo := F9} -> begin TrF9 = id(F9, TrUserData), e_mfield_Message_nodeInfo(TrF9, <<B8/binary, 74>>, TrUserData) end;
              _ -> B8
          end,
+    B10 = case M of
+              #{nodesInfo := F10} ->
+                  TrF10 = id(F10, TrUserData),
+                  if TrF10 == [] -> B9;
+                     true -> e_field_Message_nodesInfo(TrF10, B9, TrUserData)
+                  end;
+              _ -> B9
+          end,
+    B11 = case M of
+              #{token := F11} -> begin TrF11 = id(F11, TrUserData), e_type_string(TrF11, <<B10/binary, 90>>, TrUserData) end;
+              _ -> B10
+          end,
     case M of
-        #{nodesInfo := F10} ->
-            TrF10 = id(F10, TrUserData),
-            if TrF10 == [] -> B9;
-               true -> e_field_Message_nodesInfo(TrF10, B9, TrUserData)
-            end;
-        _ -> B9
+        #{nodeIp := F12} -> begin TrF12 = id(F12, TrUserData), e_mfield_Message_nodeIp(TrF12, <<B11/binary, 98>>, TrUserData) end;
+        _ -> B11
     end.
 
 encode_msg_Register(Msg, TrUserData) -> encode_msg_Register(Msg, <<>>, TrUserData).
@@ -367,6 +383,33 @@ encode_msg_NodeInfo(#{} = M, Bin, TrUserData) ->
         _ -> B2
     end.
 
+encode_msg_NodeIp(Msg, TrUserData) -> encode_msg_NodeIp(Msg, <<>>, TrUserData).
+
+
+encode_msg_NodeIp(#{} = M, Bin, TrUserData) ->
+    B1 = case M of
+             #{ip := F1} ->
+                 begin
+                     TrF1 = id(F1, TrUserData),
+                     case is_empty_string(TrF1) of
+                         true -> Bin;
+                         false -> e_type_string(TrF1, <<Bin/binary, 10>>, TrUserData)
+                     end
+                 end;
+             _ -> Bin
+         end,
+    case M of
+        #{port := F2} ->
+            begin
+                TrF2 = id(F2, TrUserData),
+                case is_empty_string(TrF2) of
+                    true -> B1;
+                    false -> e_type_string(TrF2, <<B1/binary, 18>>, TrUserData)
+                end
+            end;
+        _ -> B1
+    end.
+
 e_mfield_Message_register(Msg, Bin, TrUserData) ->
     SubBin = encode_msg_Register(Msg, <<>>, TrUserData),
     Bin2 = e_varint(byte_size(SubBin), Bin),
@@ -418,6 +461,11 @@ e_field_Message_nodesInfo([Elem | Rest], Bin, TrUserData) ->
     e_field_Message_nodesInfo(Rest, Bin3, TrUserData);
 e_field_Message_nodesInfo([], Bin, _TrUserData) -> Bin.
 
+e_mfield_Message_nodeIp(Msg, Bin, TrUserData) ->
+    SubBin = encode_msg_NodeIp(Msg, <<>>, TrUserData),
+    Bin2 = e_varint(byte_size(SubBin), Bin),
+    <<Bin2/binary, SubBin/binary>>.
+
 e_field_Albums_names([Elem | Rest], Bin, TrUserData) ->
     Bin2 = <<Bin/binary, 10>>,
     Bin3 = e_type_string(id(Elem, TrUserData), Bin2, TrUserData),
@@ -449,6 +497,9 @@ e_enum_Type('ALBUMGET', Bin, _TrUserData) -> <<Bin/binary, 9>>;
 e_enum_Type('STARTENTRANCE', Bin, _TrUserData) -> <<Bin/binary, 10>>;
 e_enum_Type('ENDENTRANCE', Bin, _TrUserData) -> <<Bin/binary, 11>>;
 e_enum_Type('NODESINFO', Bin, _TrUserData) -> <<Bin/binary, 12>>;
+e_enum_Type('READ', Bin, _TrUserData) -> <<Bin/binary, 13>>;
+e_enum_Type('WRITE', Bin, _TrUserData) -> <<Bin/binary, 14>>;
+e_enum_Type('NODEIP', Bin, _TrUserData) -> <<Bin/binary, 15>>;
 e_enum_Type(V, Bin, _TrUserData) -> e_varint(V, Bin).
 
 -compile({nowarn_unused_function,e_type_sint/3}).
@@ -597,7 +648,8 @@ decode_msg_2_doit('AlbumCreate', Bin, TrUserData) -> id(decode_msg_AlbumCreate(B
 decode_msg_2_doit('AlbumGet', Bin, TrUserData) -> id(decode_msg_AlbumGet(Bin, TrUserData), TrUserData);
 decode_msg_2_doit('Albums', Bin, TrUserData) -> id(decode_msg_Albums(Bin, TrUserData), TrUserData);
 decode_msg_2_doit('Album', Bin, TrUserData) -> id(decode_msg_Album(Bin, TrUserData), TrUserData);
-decode_msg_2_doit('NodeInfo', Bin, TrUserData) -> id(decode_msg_NodeInfo(Bin, TrUserData), TrUserData).
+decode_msg_2_doit('NodeInfo', Bin, TrUserData) -> id(decode_msg_NodeInfo(Bin, TrUserData), TrUserData);
+decode_msg_2_doit('NodeIp', Bin, TrUserData) -> id(decode_msg_NodeIp(Bin, TrUserData), TrUserData).
 
 
 
@@ -616,21 +668,35 @@ decode_msg_Message(Bin, TrUserData) ->
                                id('$undef', TrUserData),
                                id('$undef', TrUserData),
                                id([], TrUserData),
+                               id('$undef', TrUserData),
+                               id('$undef', TrUserData),
                                TrUserData).
 
-dfp_read_field_def_Message(<<8, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> d_field_Message_type(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-dfp_read_field_def_Message(<<18, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> d_field_Message_register(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-dfp_read_field_def_Message(<<26, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> d_field_Message_login(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-dfp_read_field_def_Message(<<34, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> d_field_Message_reply(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-dfp_read_field_def_Message(<<42, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
-    d_field_Message_albumCreate(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-dfp_read_field_def_Message(<<50, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> d_field_Message_albumGet(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-dfp_read_field_def_Message(<<58, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> d_field_Message_albums(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-dfp_read_field_def_Message(<<66, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> d_field_Message_album(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-dfp_read_field_def_Message(<<74, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> d_field_Message_nodeInfo(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-dfp_read_field_def_Message(<<82, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
-    d_field_Message_nodesInfo(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-dfp_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, R1, TrUserData) ->
+dfp_read_field_def_Message(<<8, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_type(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<18, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_register(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<26, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_login(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<34, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_reply(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<42, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_albumCreate(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<50, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_albumGet(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<58, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_albums(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<66, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_album(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<74, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_nodeInfo(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<82, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_nodesInfo(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<90, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_token(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<98, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    d_field_Message_nodeIp(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, R1, F@_11, F@_12, TrUserData) ->
     S1 = #{type => F@_1},
     S2 = if F@_2 == '$undef' -> S1;
             true -> S1#{register => F@_2}
@@ -656,36 +722,45 @@ dfp_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@
     S9 = if F@_9 == '$undef' -> S8;
             true -> S8#{nodeInfo => F@_9}
          end,
-    if R1 == '$undef' -> S9;
-       true -> S9#{nodesInfo => lists_reverse(R1, TrUserData)}
+    S10 = if R1 == '$undef' -> S9;
+             true -> S9#{nodesInfo => lists_reverse(R1, TrUserData)}
+          end,
+    S11 = if F@_11 == '$undef' -> S10;
+             true -> S10#{token => F@_11}
+          end,
+    if F@_12 == '$undef' -> S11;
+       true -> S11#{nodeIp => F@_12}
     end;
-dfp_read_field_def_Message(Other, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> dg_read_field_def_Message(Other, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData).
+dfp_read_field_def_Message(Other, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    dg_read_field_def_Message(Other, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData).
 
-dg_read_field_def_Message(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 32 - 7 ->
-    dg_read_field_def_Message(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-dg_read_field_def_Message(<<0:1, X:7, Rest/binary>>, N, Acc, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
+dg_read_field_def_Message(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 32 - 7 ->
+    dg_read_field_def_Message(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dg_read_field_def_Message(<<0:1, X:7, Rest/binary>>, N, Acc, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     Key = X bsl N + Acc,
     case Key of
-        8 -> d_field_Message_type(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-        18 -> d_field_Message_register(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-        26 -> d_field_Message_login(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-        34 -> d_field_Message_reply(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-        42 -> d_field_Message_albumCreate(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-        50 -> d_field_Message_albumGet(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-        58 -> d_field_Message_albums(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-        66 -> d_field_Message_album(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-        74 -> d_field_Message_nodeInfo(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-        82 -> d_field_Message_nodesInfo(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
+        8 -> d_field_Message_type(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        18 -> d_field_Message_register(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        26 -> d_field_Message_login(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        34 -> d_field_Message_reply(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        42 -> d_field_Message_albumCreate(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        50 -> d_field_Message_albumGet(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        58 -> d_field_Message_albums(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        66 -> d_field_Message_album(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        74 -> d_field_Message_nodeInfo(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        82 -> d_field_Message_nodesInfo(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        90 -> d_field_Message_token(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        98 -> d_field_Message_nodeIp(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
         _ ->
             case Key band 7 of
-                0 -> skip_varint_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-                1 -> skip_64_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-                2 -> skip_length_delimited_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-                3 -> skip_group_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-                5 -> skip_32_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData)
+                0 -> skip_varint_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+                1 -> skip_64_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+                2 -> skip_length_delimited_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+                3 -> skip_group_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+                5 -> skip_32_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData)
             end
     end;
-dg_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, R1, TrUserData) ->
+dg_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, R1, F@_11, F@_12, TrUserData) ->
     S1 = #{type => F@_1},
     S2 = if F@_2 == '$undef' -> S1;
             true -> S1#{register => F@_2}
@@ -711,19 +786,25 @@ dg_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_
     S9 = if F@_9 == '$undef' -> S8;
             true -> S8#{nodeInfo => F@_9}
          end,
-    if R1 == '$undef' -> S9;
-       true -> S9#{nodesInfo => lists_reverse(R1, TrUserData)}
+    S10 = if R1 == '$undef' -> S9;
+             true -> S9#{nodesInfo => lists_reverse(R1, TrUserData)}
+          end,
+    S11 = if F@_11 == '$undef' -> S10;
+             true -> S10#{token => F@_11}
+          end,
+    if F@_12 == '$undef' -> S11;
+       true -> S11#{nodeIp => F@_12}
     end.
 
-d_field_Message_type(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 57 ->
-    d_field_Message_type(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-d_field_Message_type(<<0:1, X:7, Rest/binary>>, N, Acc, F, _, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
+d_field_Message_type(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_type(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_type(<<0:1, X:7, Rest/binary>>, N, Acc, F, _, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     {NewFValue, RestF} = {id(d_enum_Type(begin <<Res:32/signed-native>> = <<(X bsl N + Acc):32/unsigned-native>>, id(Res, TrUserData) end), TrUserData), Rest},
-    dfp_read_field_def_Message(RestF, 0, 0, F, NewFValue, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData).
+    dfp_read_field_def_Message(RestF, 0, 0, F, NewFValue, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData).
 
-d_field_Message_register(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 57 ->
-    d_field_Message_register(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-d_field_Message_register(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, Prev, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
+d_field_Message_register(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_register(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_register(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, Prev, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_Register(Bs, TrUserData), TrUserData), Rest2} end,
     dfp_read_field_def_Message(RestF,
                                0,
@@ -741,11 +822,13 @@ d_field_Message_register(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, Prev, F@_3,
                                F@_8,
                                F@_9,
                                F@_10,
+                               F@_11,
+                               F@_12,
                                TrUserData).
 
-d_field_Message_login(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 57 ->
-    d_field_Message_login(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-d_field_Message_login(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, Prev, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
+d_field_Message_login(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_login(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_login(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, Prev, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_Login(Bs, TrUserData), TrUserData), Rest2} end,
     dfp_read_field_def_Message(RestF,
                                0,
@@ -763,11 +846,13 @@ d_field_Message_login(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, Prev, F@
                                F@_8,
                                F@_9,
                                F@_10,
+                               F@_11,
+                               F@_12,
                                TrUserData).
 
-d_field_Message_reply(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 57 ->
-    d_field_Message_reply(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-d_field_Message_reply(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, Prev, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
+d_field_Message_reply(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_reply(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_reply(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, Prev, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_ErrorReply(Bs, TrUserData), TrUserData), Rest2} end,
     dfp_read_field_def_Message(RestF,
                                0,
@@ -785,11 +870,13 @@ d_field_Message_reply(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, Pr
                                F@_8,
                                F@_9,
                                F@_10,
+                               F@_11,
+                               F@_12,
                                TrUserData).
 
-d_field_Message_albumCreate(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 57 ->
-    d_field_Message_albumCreate(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-d_field_Message_albumCreate(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, Prev, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
+d_field_Message_albumCreate(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_albumCreate(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_albumCreate(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, Prev, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_AlbumCreate(Bs, TrUserData), TrUserData), Rest2} end,
     dfp_read_field_def_Message(RestF,
                                0,
@@ -807,11 +894,13 @@ d_field_Message_albumCreate(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@
                                F@_8,
                                F@_9,
                                F@_10,
+                               F@_11,
+                               F@_12,
                                TrUserData).
 
-d_field_Message_albumGet(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 57 ->
-    d_field_Message_albumGet(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-d_field_Message_albumGet(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, Prev, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
+d_field_Message_albumGet(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_albumGet(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_albumGet(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, Prev, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_AlbumGet(Bs, TrUserData), TrUserData), Rest2} end,
     dfp_read_field_def_Message(RestF,
                                0,
@@ -829,11 +918,13 @@ d_field_Message_albumGet(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3,
                                F@_8,
                                F@_9,
                                F@_10,
+                               F@_11,
+                               F@_12,
                                TrUserData).
 
-d_field_Message_albums(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 57 ->
-    d_field_Message_albums(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-d_field_Message_albums(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, Prev, F@_8, F@_9, F@_10, TrUserData) ->
+d_field_Message_albums(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_albums(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_albums(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, Prev, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_Albums(Bs, TrUserData), TrUserData), Rest2} end,
     dfp_read_field_def_Message(RestF,
                                0,
@@ -851,11 +942,13 @@ d_field_Message_albums(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F
                                F@_8,
                                F@_9,
                                F@_10,
+                               F@_11,
+                               F@_12,
                                TrUserData).
 
-d_field_Message_album(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 57 ->
-    d_field_Message_album(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-d_field_Message_album(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, Prev, F@_9, F@_10, TrUserData) ->
+d_field_Message_album(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_album(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_album(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, Prev, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_Album(Bs, TrUserData), TrUserData), Rest2} end,
     dfp_read_field_def_Message(RestF,
                                0,
@@ -873,11 +966,13 @@ d_field_Message_album(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@
                                end,
                                F@_9,
                                F@_10,
+                               F@_11,
+                               F@_12,
                                TrUserData).
 
-d_field_Message_nodeInfo(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 57 ->
-    d_field_Message_nodeInfo(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-d_field_Message_nodeInfo(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, Prev, F@_10, TrUserData) ->
+d_field_Message_nodeInfo(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_nodeInfo(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_nodeInfo(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, Prev, F@_10, F@_11, F@_12, TrUserData) ->
     {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_NodeInfo(Bs, TrUserData), TrUserData), Rest2} end,
     dfp_read_field_def_Message(RestF,
                                0,
@@ -895,32 +990,67 @@ d_field_Message_nodeInfo(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3,
                                   true -> merge_msg_NodeInfo(Prev, NewFValue, TrUserData)
                                end,
                                F@_10,
+                               F@_11,
+                               F@_12,
                                TrUserData).
 
-d_field_Message_nodesInfo(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 57 ->
-    d_field_Message_nodesInfo(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-d_field_Message_nodesInfo(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, Prev, TrUserData) ->
+d_field_Message_nodesInfo(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_nodesInfo(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_nodesInfo(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, Prev, F@_11, F@_12, TrUserData) ->
     {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_NodeInfo(Bs, TrUserData), TrUserData), Rest2} end,
-    dfp_read_field_def_Message(RestF, 0, 0, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, cons(NewFValue, Prev, TrUserData), TrUserData).
+    dfp_read_field_def_Message(RestF, 0, 0, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, cons(NewFValue, Prev, TrUserData), F@_11, F@_12, TrUserData).
 
-skip_varint_Message(<<1:1, _:7, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> skip_varint_Message(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-skip_varint_Message(<<0:1, _:7, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
-    dfp_read_field_def_Message(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData).
+d_field_Message_token(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_token(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_token(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, _, F@_12, TrUserData) ->
+    {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Utf8:Len/binary, Rest2/binary>> = Rest, {id(unicode:characters_to_list(Utf8, unicode), TrUserData), Rest2} end,
+    dfp_read_field_def_Message(RestF, 0, 0, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, NewFValue, F@_12, TrUserData).
 
-skip_length_delimited_Message(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) when N < 57 ->
-    skip_length_delimited_Message(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData);
-skip_length_delimited_Message(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
+d_field_Message_nodeIp(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_nodeIp(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_nodeIp(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, Prev, TrUserData) ->
+    {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_NodeIp(Bs, TrUserData), TrUserData), Rest2} end,
+    dfp_read_field_def_Message(RestF,
+                               0,
+                               0,
+                               F,
+                               F@_1,
+                               F@_2,
+                               F@_3,
+                               F@_4,
+                               F@_5,
+                               F@_6,
+                               F@_7,
+                               F@_8,
+                               F@_9,
+                               F@_10,
+                               F@_11,
+                               if Prev == '$undef' -> NewFValue;
+                                  true -> merge_msg_NodeIp(Prev, NewFValue, TrUserData)
+                               end,
+                               TrUserData).
+
+skip_varint_Message(<<1:1, _:7, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    skip_varint_Message(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+skip_varint_Message(<<0:1, _:7, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    dfp_read_field_def_Message(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData).
+
+skip_length_delimited_Message(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    skip_length_delimited_Message(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+skip_length_delimited_Message(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     Length = X bsl N + Acc,
     <<_:Length/binary, Rest2/binary>> = Rest,
-    dfp_read_field_def_Message(Rest2, 0, 0, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData).
+    dfp_read_field_def_Message(Rest2, 0, 0, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData).
 
-skip_group_Message(Bin, _, Z2, FNum, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) ->
+skip_group_Message(Bin, _, Z2, FNum, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     {_, Rest} = read_group(Bin, FNum),
-    dfp_read_field_def_Message(Rest, 0, Z2, FNum, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData).
+    dfp_read_field_def_Message(Rest, 0, Z2, FNum, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData).
 
-skip_32_Message(<<_:32, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> dfp_read_field_def_Message(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData).
+skip_32_Message(<<_:32, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    dfp_read_field_def_Message(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData).
 
-skip_64_Message(<<_:64, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData) -> dfp_read_field_def_Message(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, TrUserData).
+skip_64_Message(<<_:64, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+    dfp_read_field_def_Message(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData).
 
 decode_msg_Register(Bin, TrUserData) -> dfp_read_field_def_Register(Bin, 0, 0, 0, id([], TrUserData), id([], TrUserData), TrUserData).
 
@@ -1309,6 +1439,57 @@ skip_32_NodeInfo(<<_:32, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData)
 
 skip_64_NodeInfo(<<_:64, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData) -> dfp_read_field_def_NodeInfo(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData).
 
+decode_msg_NodeIp(Bin, TrUserData) -> dfp_read_field_def_NodeIp(Bin, 0, 0, 0, id([], TrUserData), id([], TrUserData), TrUserData).
+
+dfp_read_field_def_NodeIp(<<10, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> d_field_NodeIp_ip(Rest, Z1, Z2, F, F@_1, F@_2, TrUserData);
+dfp_read_field_def_NodeIp(<<18, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> d_field_NodeIp_port(Rest, Z1, Z2, F, F@_1, F@_2, TrUserData);
+dfp_read_field_def_NodeIp(<<>>, 0, 0, _, F@_1, F@_2, _) -> #{ip => F@_1, port => F@_2};
+dfp_read_field_def_NodeIp(Other, Z1, Z2, F, F@_1, F@_2, TrUserData) -> dg_read_field_def_NodeIp(Other, Z1, Z2, F, F@_1, F@_2, TrUserData).
+
+dg_read_field_def_NodeIp(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, TrUserData) when N < 32 - 7 -> dg_read_field_def_NodeIp(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, TrUserData);
+dg_read_field_def_NodeIp(<<0:1, X:7, Rest/binary>>, N, Acc, _, F@_1, F@_2, TrUserData) ->
+    Key = X bsl N + Acc,
+    case Key of
+        10 -> d_field_NodeIp_ip(Rest, 0, 0, 0, F@_1, F@_2, TrUserData);
+        18 -> d_field_NodeIp_port(Rest, 0, 0, 0, F@_1, F@_2, TrUserData);
+        _ ->
+            case Key band 7 of
+                0 -> skip_varint_NodeIp(Rest, 0, 0, Key bsr 3, F@_1, F@_2, TrUserData);
+                1 -> skip_64_NodeIp(Rest, 0, 0, Key bsr 3, F@_1, F@_2, TrUserData);
+                2 -> skip_length_delimited_NodeIp(Rest, 0, 0, Key bsr 3, F@_1, F@_2, TrUserData);
+                3 -> skip_group_NodeIp(Rest, 0, 0, Key bsr 3, F@_1, F@_2, TrUserData);
+                5 -> skip_32_NodeIp(Rest, 0, 0, Key bsr 3, F@_1, F@_2, TrUserData)
+            end
+    end;
+dg_read_field_def_NodeIp(<<>>, 0, 0, _, F@_1, F@_2, _) -> #{ip => F@_1, port => F@_2}.
+
+d_field_NodeIp_ip(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, TrUserData) when N < 57 -> d_field_NodeIp_ip(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, TrUserData);
+d_field_NodeIp_ip(<<0:1, X:7, Rest/binary>>, N, Acc, F, _, F@_2, TrUserData) ->
+    {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Utf8:Len/binary, Rest2/binary>> = Rest, {id(unicode:characters_to_list(Utf8, unicode), TrUserData), Rest2} end,
+    dfp_read_field_def_NodeIp(RestF, 0, 0, F, NewFValue, F@_2, TrUserData).
+
+d_field_NodeIp_port(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, TrUserData) when N < 57 -> d_field_NodeIp_port(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, TrUserData);
+d_field_NodeIp_port(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, _, TrUserData) ->
+    {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Utf8:Len/binary, Rest2/binary>> = Rest, {id(unicode:characters_to_list(Utf8, unicode), TrUserData), Rest2} end,
+    dfp_read_field_def_NodeIp(RestF, 0, 0, F, F@_1, NewFValue, TrUserData).
+
+skip_varint_NodeIp(<<1:1, _:7, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> skip_varint_NodeIp(Rest, Z1, Z2, F, F@_1, F@_2, TrUserData);
+skip_varint_NodeIp(<<0:1, _:7, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> dfp_read_field_def_NodeIp(Rest, Z1, Z2, F, F@_1, F@_2, TrUserData).
+
+skip_length_delimited_NodeIp(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, TrUserData) when N < 57 -> skip_length_delimited_NodeIp(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, TrUserData);
+skip_length_delimited_NodeIp(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, TrUserData) ->
+    Length = X bsl N + Acc,
+    <<_:Length/binary, Rest2/binary>> = Rest,
+    dfp_read_field_def_NodeIp(Rest2, 0, 0, F, F@_1, F@_2, TrUserData).
+
+skip_group_NodeIp(Bin, _, Z2, FNum, F@_1, F@_2, TrUserData) ->
+    {_, Rest} = read_group(Bin, FNum),
+    dfp_read_field_def_NodeIp(Rest, 0, Z2, FNum, F@_1, F@_2, TrUserData).
+
+skip_32_NodeIp(<<_:32, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> dfp_read_field_def_NodeIp(Rest, Z1, Z2, F, F@_1, F@_2, TrUserData).
+
+skip_64_NodeIp(<<_:64, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> dfp_read_field_def_NodeIp(Rest, Z1, Z2, F, F@_1, F@_2, TrUserData).
+
 d_enum_Type(0) -> 'REGISTER';
 d_enum_Type(1) -> 'LOGIN';
 d_enum_Type(2) -> 'LOGOUT';
@@ -1322,6 +1503,9 @@ d_enum_Type(9) -> 'ALBUMGET';
 d_enum_Type(10) -> 'STARTENTRANCE';
 d_enum_Type(11) -> 'ENDENTRANCE';
 d_enum_Type(12) -> 'NODESINFO';
+d_enum_Type(13) -> 'READ';
+d_enum_Type(14) -> 'WRITE';
+d_enum_Type(15) -> 'NODEIP';
 d_enum_Type(V) -> V.
 
 read_group(Bin, FieldNum) ->
@@ -1395,7 +1579,8 @@ merge_msgs(Prev, New, MsgName, Opts) ->
         'AlbumGet' -> merge_msg_AlbumGet(Prev, New, TrUserData);
         'Albums' -> merge_msg_Albums(Prev, New, TrUserData);
         'Album' -> merge_msg_Album(Prev, New, TrUserData);
-        'NodeInfo' -> merge_msg_NodeInfo(Prev, New, TrUserData)
+        'NodeInfo' -> merge_msg_NodeInfo(Prev, New, TrUserData);
+        'NodeIp' -> merge_msg_NodeIp(Prev, New, TrUserData)
     end.
 
 -compile({nowarn_unused_function,merge_msg_Message/3}).
@@ -1454,11 +1639,22 @@ merge_msg_Message(PMsg, NMsg, TrUserData) ->
               {#{nodeInfo := PFnodeInfo}, _} -> S9#{nodeInfo => PFnodeInfo};
               {_, _} -> S9
           end,
+    S11 = case {PMsg, NMsg} of
+              {#{nodesInfo := PFnodesInfo}, #{nodesInfo := NFnodesInfo}} -> S10#{nodesInfo => 'erlang_++'(PFnodesInfo, NFnodesInfo, TrUserData)};
+              {_, #{nodesInfo := NFnodesInfo}} -> S10#{nodesInfo => NFnodesInfo};
+              {#{nodesInfo := PFnodesInfo}, _} -> S10#{nodesInfo => PFnodesInfo};
+              {_, _} -> S10
+          end,
+    S12 = case {PMsg, NMsg} of
+              {_, #{token := NFtoken}} -> S11#{token => NFtoken};
+              {#{token := PFtoken}, _} -> S11#{token => PFtoken};
+              _ -> S11
+          end,
     case {PMsg, NMsg} of
-        {#{nodesInfo := PFnodesInfo}, #{nodesInfo := NFnodesInfo}} -> S10#{nodesInfo => 'erlang_++'(PFnodesInfo, NFnodesInfo, TrUserData)};
-        {_, #{nodesInfo := NFnodesInfo}} -> S10#{nodesInfo => NFnodesInfo};
-        {#{nodesInfo := PFnodesInfo}, _} -> S10#{nodesInfo => PFnodesInfo};
-        {_, _} -> S10
+        {#{nodeIp := PFnodeIp}, #{nodeIp := NFnodeIp}} -> S12#{nodeIp => merge_msg_NodeIp(PFnodeIp, NFnodeIp, TrUserData)};
+        {_, #{nodeIp := NFnodeIp}} -> S12#{nodeIp => NFnodeIp};
+        {#{nodeIp := PFnodeIp}, _} -> S12#{nodeIp => PFnodeIp};
+        {_, _} -> S12
     end.
 
 -compile({nowarn_unused_function,merge_msg_Register/3}).
@@ -1561,6 +1757,20 @@ merge_msg_NodeInfo(PMsg, NMsg, TrUserData) ->
         {_, _} -> S3
     end.
 
+-compile({nowarn_unused_function,merge_msg_NodeIp/3}).
+merge_msg_NodeIp(PMsg, NMsg, _) ->
+    S1 = #{},
+    S2 = case {PMsg, NMsg} of
+             {_, #{ip := NFip}} -> S1#{ip => NFip};
+             {#{ip := PFip}, _} -> S1#{ip => PFip};
+             _ -> S1
+         end,
+    case {PMsg, NMsg} of
+        {_, #{port := NFport}} -> S2#{port => NFport};
+        {#{port := PFport}, _} -> S2#{port => PFport};
+        _ -> S2
+    end.
+
 
 verify_msg(Msg, MsgName) when is_atom(MsgName) -> verify_msg(Msg, MsgName, []).
 
@@ -1576,6 +1786,7 @@ verify_msg(Msg, MsgName, Opts) ->
         'Albums' -> v_msg_Albums(Msg, [MsgName], TrUserData);
         'Album' -> v_msg_Album(Msg, [MsgName], TrUserData);
         'NodeInfo' -> v_msg_NodeInfo(Msg, [MsgName], TrUserData);
+        'NodeIp' -> v_msg_NodeIp(Msg, [MsgName], TrUserData);
         _ -> mk_type_error(not_a_known_message, Msg, [])
     end.
 
@@ -1628,6 +1839,14 @@ v_msg_Message(#{} = M, Path, TrUserData) ->
             end;
         _ -> ok
     end,
+    case M of
+        #{token := F11} -> v_type_string(F11, [token | Path], TrUserData);
+        _ -> ok
+    end,
+    case M of
+        #{nodeIp := F12} -> v_submsg_NodeIp(F12, [nodeIp | Path], TrUserData);
+        _ -> ok
+    end,
     lists:foreach(fun (type) -> ok;
                       (register) -> ok;
                       (login) -> ok;
@@ -1638,6 +1857,8 @@ v_msg_Message(#{} = M, Path, TrUserData) ->
                       (album) -> ok;
                       (nodeInfo) -> ok;
                       (nodesInfo) -> ok;
+                      (token) -> ok;
+                      (nodeIp) -> ok;
                       (OtherKey) -> mk_type_error({extraneous_key, OtherKey}, M, Path)
                   end,
                   maps:keys(M)),
@@ -1837,6 +2058,30 @@ v_msg_NodeInfo(#{} = M, Path, TrUserData) ->
 v_msg_NodeInfo(M, Path, _TrUserData) when is_map(M) -> mk_type_error({missing_fields, [] -- maps:keys(M), 'NodeInfo'}, M, Path);
 v_msg_NodeInfo(X, Path, _TrUserData) -> mk_type_error({expected_msg, 'NodeInfo'}, X, Path).
 
+-compile({nowarn_unused_function,v_submsg_NodeIp/3}).
+-dialyzer({nowarn_function,v_submsg_NodeIp/3}).
+v_submsg_NodeIp(Msg, Path, TrUserData) -> v_msg_NodeIp(Msg, Path, TrUserData).
+
+-compile({nowarn_unused_function,v_msg_NodeIp/3}).
+-dialyzer({nowarn_function,v_msg_NodeIp/3}).
+v_msg_NodeIp(#{} = M, Path, TrUserData) ->
+    case M of
+        #{ip := F1} -> v_type_string(F1, [ip | Path], TrUserData);
+        _ -> ok
+    end,
+    case M of
+        #{port := F2} -> v_type_string(F2, [port | Path], TrUserData);
+        _ -> ok
+    end,
+    lists:foreach(fun (ip) -> ok;
+                      (port) -> ok;
+                      (OtherKey) -> mk_type_error({extraneous_key, OtherKey}, M, Path)
+                  end,
+                  maps:keys(M)),
+    ok;
+v_msg_NodeIp(M, Path, _TrUserData) when is_map(M) -> mk_type_error({missing_fields, [] -- maps:keys(M), 'NodeIp'}, M, Path);
+v_msg_NodeIp(X, Path, _TrUserData) -> mk_type_error({expected_msg, 'NodeIp'}, X, Path).
+
 -compile({nowarn_unused_function,v_enum_Type/3}).
 -dialyzer({nowarn_function,v_enum_Type/3}).
 v_enum_Type('REGISTER', _Path, _TrUserData) -> ok;
@@ -1852,6 +2097,9 @@ v_enum_Type('ALBUMGET', _Path, _TrUserData) -> ok;
 v_enum_Type('STARTENTRANCE', _Path, _TrUserData) -> ok;
 v_enum_Type('ENDENTRANCE', _Path, _TrUserData) -> ok;
 v_enum_Type('NODESINFO', _Path, _TrUserData) -> ok;
+v_enum_Type('READ', _Path, _TrUserData) -> ok;
+v_enum_Type('WRITE', _Path, _TrUserData) -> ok;
+v_enum_Type('NODEIP', _Path, _TrUserData) -> ok;
 v_enum_Type(V, _Path, _TrUserData) when -2147483648 =< V, V =< 2147483647, is_integer(V) -> ok;
 v_enum_Type(X, Path, _TrUserData) -> mk_type_error({invalid_enum, 'Type'}, X, Path).
 
@@ -1917,7 +2165,10 @@ get_msg_defs() ->
        {'ALBUMGET', 9, []},
        {'STARTENTRANCE', 10, []},
        {'ENDENTRANCE', 11, []},
-       {'NODESINFO', 12, []}]},
+       {'NODESINFO', 12, []},
+       {'READ', 13, []},
+       {'WRITE', 14, []},
+       {'NODEIP', 15, []}]},
      {{msg, 'Message'},
       [#{name => type, fnum => 1, rnum => 2, type => {enum, 'Type'}, occurrence => defaulty, opts => []},
        #{name => register, fnum => 2, rnum => 3, type => {msg, 'Register'}, occurrence => optional, opts => []},
@@ -1928,7 +2179,9 @@ get_msg_defs() ->
        #{name => albums, fnum => 7, rnum => 8, type => {msg, 'Albums'}, occurrence => optional, opts => []},
        #{name => album, fnum => 8, rnum => 9, type => {msg, 'Album'}, occurrence => optional, opts => []},
        #{name => nodeInfo, fnum => 9, rnum => 10, type => {msg, 'NodeInfo'}, occurrence => optional, opts => []},
-       #{name => nodesInfo, fnum => 10, rnum => 11, type => {msg, 'NodeInfo'}, occurrence => repeated, opts => []}]},
+       #{name => nodesInfo, fnum => 10, rnum => 11, type => {msg, 'NodeInfo'}, occurrence => repeated, opts => []},
+       #{name => token, fnum => 11, rnum => 12, type => string, occurrence => optional, opts => []},
+       #{name => nodeIp, fnum => 12, rnum => 13, type => {msg, 'NodeIp'}, occurrence => optional, opts => []}]},
      {{msg, 'Register'}, [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}]},
      {{msg, 'Login'}, [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}]},
      {{msg, 'ErrorReply'}, [#{name => message, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}]},
@@ -1939,16 +2192,17 @@ get_msg_defs() ->
      {{msg, 'NodeInfo'},
       [#{name => ip, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []},
        #{name => port, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []},
-       #{name => tokens, fnum => 3, rnum => 4, type => string, occurrence => repeated, opts => []}]}].
+       #{name => tokens, fnum => 3, rnum => 4, type => string, occurrence => repeated, opts => []}]},
+     {{msg, 'NodeIp'}, [#{name => ip, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => port, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}]}].
 
 
-get_msg_names() -> ['Message', 'Register', 'Login', 'ErrorReply', 'AlbumCreate', 'AlbumGet', 'Albums', 'Album', 'NodeInfo'].
+get_msg_names() -> ['Message', 'Register', 'Login', 'ErrorReply', 'AlbumCreate', 'AlbumGet', 'Albums', 'Album', 'NodeInfo', 'NodeIp'].
 
 
 get_group_names() -> [].
 
 
-get_msg_or_group_names() -> ['Message', 'Register', 'Login', 'ErrorReply', 'AlbumCreate', 'AlbumGet', 'Albums', 'Album', 'NodeInfo'].
+get_msg_or_group_names() -> ['Message', 'Register', 'Login', 'ErrorReply', 'AlbumCreate', 'AlbumGet', 'Albums', 'Album', 'NodeInfo', 'NodeIp'].
 
 
 get_enum_names() -> ['Type'].
@@ -1978,7 +2232,9 @@ find_msg_def('Message') ->
      #{name => albums, fnum => 7, rnum => 8, type => {msg, 'Albums'}, occurrence => optional, opts => []},
      #{name => album, fnum => 8, rnum => 9, type => {msg, 'Album'}, occurrence => optional, opts => []},
      #{name => nodeInfo, fnum => 9, rnum => 10, type => {msg, 'NodeInfo'}, occurrence => optional, opts => []},
-     #{name => nodesInfo, fnum => 10, rnum => 11, type => {msg, 'NodeInfo'}, occurrence => repeated, opts => []}];
+     #{name => nodesInfo, fnum => 10, rnum => 11, type => {msg, 'NodeInfo'}, occurrence => repeated, opts => []},
+     #{name => token, fnum => 11, rnum => 12, type => string, occurrence => optional, opts => []},
+     #{name => nodeIp, fnum => 12, rnum => 13, type => {msg, 'NodeIp'}, occurrence => optional, opts => []}];
 find_msg_def('Register') -> [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}];
 find_msg_def('Login') -> [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}];
 find_msg_def('ErrorReply') -> [#{name => message, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}];
@@ -1990,6 +2246,7 @@ find_msg_def('NodeInfo') ->
     [#{name => ip, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []},
      #{name => port, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []},
      #{name => tokens, fnum => 3, rnum => 4, type => string, occurrence => repeated, opts => []}];
+find_msg_def('NodeIp') -> [#{name => ip, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => port, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}];
 find_msg_def(_) -> error.
 
 
@@ -2006,7 +2263,10 @@ find_enum_def('Type') ->
      {'ALBUMGET', 9, []},
      {'STARTENTRANCE', 10, []},
      {'ENDENTRANCE', 11, []},
-     {'NODESINFO', 12, []}];
+     {'NODESINFO', 12, []},
+     {'READ', 13, []},
+     {'WRITE', 14, []},
+     {'NODEIP', 15, []}];
 find_enum_def(_) -> error.
 
 
@@ -2028,7 +2288,10 @@ enum_symbol_by_value_Type(8) -> 'ALBUMS';
 enum_symbol_by_value_Type(9) -> 'ALBUMGET';
 enum_symbol_by_value_Type(10) -> 'STARTENTRANCE';
 enum_symbol_by_value_Type(11) -> 'ENDENTRANCE';
-enum_symbol_by_value_Type(12) -> 'NODESINFO'.
+enum_symbol_by_value_Type(12) -> 'NODESINFO';
+enum_symbol_by_value_Type(13) -> 'READ';
+enum_symbol_by_value_Type(14) -> 'WRITE';
+enum_symbol_by_value_Type(15) -> 'NODEIP'.
 
 
 enum_value_by_symbol_Type('REGISTER') -> 0;
@@ -2043,7 +2306,10 @@ enum_value_by_symbol_Type('ALBUMS') -> 8;
 enum_value_by_symbol_Type('ALBUMGET') -> 9;
 enum_value_by_symbol_Type('STARTENTRANCE') -> 10;
 enum_value_by_symbol_Type('ENDENTRANCE') -> 11;
-enum_value_by_symbol_Type('NODESINFO') -> 12.
+enum_value_by_symbol_Type('NODESINFO') -> 12;
+enum_value_by_symbol_Type('READ') -> 13;
+enum_value_by_symbol_Type('WRITE') -> 14;
+enum_value_by_symbol_Type('NODEIP') -> 15.
 
 
 get_service_names() -> [].
@@ -2098,6 +2364,7 @@ fqbin_to_msg_name(<<"protos.AlbumGet">>) -> 'AlbumGet';
 fqbin_to_msg_name(<<"protos.Albums">>) -> 'Albums';
 fqbin_to_msg_name(<<"protos.Album">>) -> 'Album';
 fqbin_to_msg_name(<<"protos.NodeInfo">>) -> 'NodeInfo';
+fqbin_to_msg_name(<<"protos.NodeIp">>) -> 'NodeIp';
 fqbin_to_msg_name(E) -> error({gpb_error, {badmsg, E}}).
 
 
@@ -2110,6 +2377,7 @@ msg_name_to_fqbin('AlbumGet') -> <<"protos.AlbumGet">>;
 msg_name_to_fqbin('Albums') -> <<"protos.Albums">>;
 msg_name_to_fqbin('Album') -> <<"protos.Album">>;
 msg_name_to_fqbin('NodeInfo') -> <<"protos.NodeInfo">>;
+msg_name_to_fqbin('NodeIp') -> <<"protos.NodeIp">>;
 msg_name_to_fqbin(E) -> error({gpb_error, {badmsg, E}}).
 
 
@@ -2148,7 +2416,7 @@ get_all_source_basenames() -> ["messages.proto"].
 get_all_proto_names() -> ["messages"].
 
 
-get_msg_containment("messages") -> ['Album', 'AlbumCreate', 'AlbumGet', 'Albums', 'ErrorReply', 'Login', 'Message', 'NodeInfo', 'Register'];
+get_msg_containment("messages") -> ['Album', 'AlbumCreate', 'AlbumGet', 'Albums', 'ErrorReply', 'Login', 'Message', 'NodeInfo', 'NodeIp', 'Register'];
 get_msg_containment(P) -> error({gpb_error, {badproto, P}}).
 
 
@@ -2168,6 +2436,7 @@ get_enum_containment("messages") -> ['Type'];
 get_enum_containment(P) -> error({gpb_error, {badproto, P}}).
 
 
+get_proto_by_msg_name_as_fqbin(<<"protos.NodeIp">>) -> "messages";
 get_proto_by_msg_name_as_fqbin(<<"protos.Register">>) -> "messages";
 get_proto_by_msg_name_as_fqbin(<<"protos.Albums">>) -> "messages";
 get_proto_by_msg_name_as_fqbin(<<"protos.AlbumGet">>) -> "messages";

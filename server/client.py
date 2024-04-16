@@ -68,6 +68,17 @@ def endConnecting(ip,port,tokens):
     message.nodeInfo.CopyFrom(nodeInfo)
     return message
 
+def read(token):    
+    message = Messages.Message()
+    message.type = Messages.Type.READ
+    message.token = token
+    return message
+
+def write(token):    
+    message = Messages.Message()
+    message.type = Messages.Type.WRITE
+    message.token = token
+    return message
 
 # Define the address and port to connect to
 server_address = ('localhost', 4321)
@@ -94,8 +105,24 @@ try:
         #sendAndRecieve(sock,listAlbums())
         #sendAndRecieve(sock,getAlbum("F1"))
         #sendAndRecieve(sock,logout())
+        
+        print("startConnect")
         sendAndRecieve(sock,startConnecting("localhost","8888",["136e3cf1ab6a4dc9cd25784ffe7ab05af45d9f77","442ed285407b635427559a3f1f1695b260b46ded"]))
+        
+        print("read")
+        sendAndRecieve(sock,read("e1b40557d67bb000f7bd9e0e2c760687540073be"))
+        
+        print("write")
+        sendAndRecieve(sock,write("e1b40557d67bb000f7bd9e0e2c760687540073be"))
+        
+        print("endConnect")
         sendAndRecieve(sock,endConnecting("localhost","8888",["136e3cf1ab6a4dc9cd25784ffe7ab05af45d9f77","442ed285407b635427559a3f1f1695b260b46ded"]))
+        
+        print("read")
+        sendAndRecieve(sock,read("e1b40557d67bb000f7bd9e0e2c760687540073be"))
+        
+        print("write")
+        sendAndRecieve(sock,write("e1b40557d67bb000f7bd9e0e2c760687540073be"))
         
 except ConnectionRefusedError:
     print("Connection refused. Make sure the server is running.")

@@ -13,6 +13,8 @@ message Message {
   optional Album album = 8;
   optional NodeInfo nodeInfo = 9;
   repeated NodeInfo nodesInfo = 10;
+  optional string token = 11;
+  optional NodeIp nodeIp = 12;
 }
 
 enum Type {
@@ -29,6 +31,9 @@ enum Type {
   STARTENTRANCE = 10;
   ENDENTRANCE = 11;
   NODESINFO = 12;
+  READ = 13;
+  WRITE = 14;
+  NODEIP = 15;
 }
 
 message Register {
@@ -66,4 +71,9 @@ message NodeInfo{
   string ip = 1;
   string port = 2;
   repeated string tokens = 3;
+}
+
+message NodeIp{
+  string ip = 1;
+  string port = 2;
 }
