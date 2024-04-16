@@ -1,10 +1,13 @@
 package org.dht.config;
 
 import java.io.File;
+import java.math.BigInteger;
 
 public class DHTConfig {
     private int port;
     private String baseDirectory;
+    private long mod;
+    private int tokenCount;
 
     public int getPort() {
         return port;
@@ -12,6 +15,14 @@ public class DHTConfig {
 
     public String getBaseDirectory() {
         return baseDirectory;
+    }
+
+    public long getMod() {
+        return mod;
+    }
+
+    public int getTokenCount() {
+        return tokenCount;
     }
 
     public void validate() throws RuntimeException {
@@ -29,4 +40,6 @@ public class DHTConfig {
             this.baseDirectory = this.baseDirectory + "/";
         }
     }
+
+
 }

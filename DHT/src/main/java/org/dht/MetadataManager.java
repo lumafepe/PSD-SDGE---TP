@@ -1,6 +1,7 @@
 package org.dht;
 
 import org.apache.logging.log4j.LogManager;
+import org.dht.config.Manager;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -34,7 +35,7 @@ public class MetadataManager {
         for(Long l : this.myTokens) {
             this.allReadTokens.add(l);
             this.allWriteTokens.add(l);
-            this.ipMap.put(l, new InetSocketAddress(ip, ConfigManager.getInstance().getPort()));
+            this.ipMap.put(l, new InetSocketAddress(ip, Manager.getInstance().getDHT().getPort()));
         }
     }
 
@@ -59,7 +60,7 @@ public class MetadataManager {
     }
 
     private boolean isAuthoritative(String hash, TreeSet<Long> tokens) {
-        long position = TokenGenerator.hashToRing(hash, ConfigManager.getInstance().getMod());
+        long position = TokenGenerator.hashToRing(hash, Manager.getInstance().getDHT().getMod());
 
         Long token = tokens.ceiling(position);
         if(token == null) {
@@ -70,8 +71,8 @@ public class MetadataManager {
     }
 
     private void generateTokens() {
-        ConfigManager configManager = ConfigManager.getInstance();
+        Manager configManager = Manager.getInstance();
         this.myTokens = new TreeSet<>();
-        this.myTokens.addAll(TokenGenerator.generateTokens(configManager.getTokenCount(), configManager.getMod()));
+        this.myTokens.addAll(TokenGenerator.generateTokens(configManager.getDHT().getTokenCount(), configManager.getDHT().getMod()));
     }
 }
