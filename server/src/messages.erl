@@ -65,7 +65,7 @@
         album                   => 'Album'(),       % = 8, optional
         nodeInfo                => 'NodeInfo'(),    % = 9, optional
         nodesInfo               => ['NodeInfo'()],  % = 10, repeated
-        token                   => unicode:chardata(), % = 11, optional
+        token                   => non_neg_integer(), % = 11, optional, 64 bits
         nodeIp                  => 'NodeIp'()       % = 12, optional
        }.
 
@@ -102,13 +102,13 @@
 
 -type 'NodeInfo'() ::
       #{ip                      => unicode:chardata(), % = 1, optional
-        port                    => unicode:chardata(), % = 2, optional
-        tokens                  => [unicode:chardata()] % = 3, repeated
+        port                    => non_neg_integer(), % = 2, optional, 32 bits
+        tokens                  => [non_neg_integer()] % = 3, repeated, 64 bits
        }.
 
 -type 'NodeIp'() ::
       #{ip                      => unicode:chardata(), % = 1, optional
-        port                    => unicode:chardata() % = 2, optional
+        port                    => non_neg_integer() % = 2, optional, 32 bits
        }.
 
 -export_type(['Message'/0, 'Register'/0, 'Login'/0, 'ErrorReply'/0, 'AlbumCreate'/0, 'AlbumGet'/0, 'Albums'/0, 'Album'/0, 'NodeInfo'/0, 'NodeIp'/0]).
@@ -201,7 +201,7 @@ encode_msg_Message(#{} = M, Bin, TrUserData) ->
               _ -> B9
           end,
     B11 = case M of
-              #{token := F11} -> begin TrF11 = id(F11, TrUserData), e_type_string(TrF11, <<B10/binary, 90>>, TrUserData) end;
+              #{token := F11} -> begin TrF11 = id(F11, TrUserData), e_varint(TrF11, <<B10/binary, 88>>, TrUserData) end;
               _ -> B10
           end,
     case M of
@@ -367,9 +367,8 @@ encode_msg_NodeInfo(#{} = M, Bin, TrUserData) ->
              #{port := F2} ->
                  begin
                      TrF2 = id(F2, TrUserData),
-                     case is_empty_string(TrF2) of
-                         true -> B1;
-                         false -> e_type_string(TrF2, <<B1/binary, 18>>, TrUserData)
+                     if TrF2 =:= 0 -> B1;
+                        true -> e_varint(TrF2, <<B1/binary, 16>>, TrUserData)
                      end
                  end;
              _ -> B1
@@ -402,9 +401,8 @@ encode_msg_NodeIp(#{} = M, Bin, TrUserData) ->
         #{port := F2} ->
             begin
                 TrF2 = id(F2, TrUserData),
-                case is_empty_string(TrF2) of
-                    true -> B1;
-                    false -> e_type_string(TrF2, <<B1/binary, 18>>, TrUserData)
+                if TrF2 =:= 0 -> B1;
+                   true -> e_varint(TrF2, <<B1/binary, 16>>, TrUserData)
                 end
             end;
         _ -> B1
@@ -478,11 +476,17 @@ e_field_Album_files([Elem | Rest], Bin, TrUserData) ->
     e_field_Album_files(Rest, Bin3, TrUserData);
 e_field_Album_files([], Bin, _TrUserData) -> Bin.
 
-e_field_NodeInfo_tokens([Elem | Rest], Bin, TrUserData) ->
+e_field_NodeInfo_tokens(Elems, Bin, TrUserData) when Elems =/= [] ->
+    SubBin = e_pfield_NodeInfo_tokens(Elems, <<>>, TrUserData),
     Bin2 = <<Bin/binary, 26>>,
-    Bin3 = e_type_string(id(Elem, TrUserData), Bin2, TrUserData),
-    e_field_NodeInfo_tokens(Rest, Bin3, TrUserData);
+    Bin3 = e_varint(byte_size(SubBin), Bin2),
+    <<Bin3/binary, SubBin/binary>>;
 e_field_NodeInfo_tokens([], Bin, _TrUserData) -> Bin.
+
+e_pfield_NodeInfo_tokens([Value | Rest], Bin, TrUserData) ->
+    Bin2 = e_varint(id(Value, TrUserData), Bin, TrUserData),
+    e_pfield_NodeInfo_tokens(Rest, Bin2, TrUserData);
+e_pfield_NodeInfo_tokens([], Bin, _TrUserData) -> Bin.
 
 e_enum_Type('REGISTER', Bin, _TrUserData) -> <<Bin/binary, 0>>;
 e_enum_Type('LOGIN', Bin, _TrUserData) -> <<Bin/binary, 1>>;
@@ -692,7 +696,7 @@ dfp_read_field_def_Message(<<74, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_
     d_field_Message_nodeInfo(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
 dfp_read_field_def_Message(<<82, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     d_field_Message_nodesInfo(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
-dfp_read_field_def_Message(<<90, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
+dfp_read_field_def_Message(<<88, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     d_field_Message_token(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
 dfp_read_field_def_Message(<<98, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     d_field_Message_nodeIp(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
@@ -749,7 +753,7 @@ dg_read_field_def_Message(<<0:1, X:7, Rest/binary>>, N, Acc, _, F@_1, F@_2, F@_3
         66 -> d_field_Message_album(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
         74 -> d_field_Message_nodeInfo(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
         82 -> d_field_Message_nodesInfo(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
-        90 -> d_field_Message_token(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        88 -> d_field_Message_token(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
         98 -> d_field_Message_nodeIp(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
         _ ->
             case Key band 7 of
@@ -1003,7 +1007,7 @@ d_field_Message_nodesInfo(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3
 d_field_Message_token(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
     d_field_Message_token(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
 d_field_Message_token(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, _, F@_12, TrUserData) ->
-    {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Utf8:Len/binary, Rest2/binary>> = Rest, {id(unicode:characters_to_list(Utf8, unicode), TrUserData), Rest2} end,
+    {NewFValue, RestF} = {id((X bsl N + Acc) band 18446744073709551615, TrUserData), Rest},
     dfp_read_field_def_Message(RestF, 0, 0, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, NewFValue, F@_12, TrUserData).
 
 d_field_Message_nodeIp(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
@@ -1381,11 +1385,12 @@ skip_32_Album(<<_:32, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> dfp_r
 
 skip_64_Album(<<_:64, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> dfp_read_field_def_Album(Rest, Z1, Z2, F, F@_1, F@_2, TrUserData).
 
-decode_msg_NodeInfo(Bin, TrUserData) -> dfp_read_field_def_NodeInfo(Bin, 0, 0, 0, id([], TrUserData), id([], TrUserData), id([], TrUserData), TrUserData).
+decode_msg_NodeInfo(Bin, TrUserData) -> dfp_read_field_def_NodeInfo(Bin, 0, 0, 0, id([], TrUserData), id(0, TrUserData), id([], TrUserData), TrUserData).
 
 dfp_read_field_def_NodeInfo(<<10, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData) -> d_field_NodeInfo_ip(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData);
-dfp_read_field_def_NodeInfo(<<18, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData) -> d_field_NodeInfo_port(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData);
-dfp_read_field_def_NodeInfo(<<26, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData) -> d_field_NodeInfo_tokens(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData);
+dfp_read_field_def_NodeInfo(<<16, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData) -> d_field_NodeInfo_port(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData);
+dfp_read_field_def_NodeInfo(<<26, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData) -> d_pfield_NodeInfo_tokens(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData);
+dfp_read_field_def_NodeInfo(<<24, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData) -> d_field_NodeInfo_tokens(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData);
 dfp_read_field_def_NodeInfo(<<>>, 0, 0, _, F@_1, F@_2, R1, TrUserData) -> #{ip => F@_1, port => F@_2, tokens => lists_reverse(R1, TrUserData)};
 dfp_read_field_def_NodeInfo(Other, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData) -> dg_read_field_def_NodeInfo(Other, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData).
 
@@ -1394,8 +1399,9 @@ dg_read_field_def_NodeInfo(<<0:1, X:7, Rest/binary>>, N, Acc, _, F@_1, F@_2, F@_
     Key = X bsl N + Acc,
     case Key of
         10 -> d_field_NodeInfo_ip(Rest, 0, 0, 0, F@_1, F@_2, F@_3, TrUserData);
-        18 -> d_field_NodeInfo_port(Rest, 0, 0, 0, F@_1, F@_2, F@_3, TrUserData);
-        26 -> d_field_NodeInfo_tokens(Rest, 0, 0, 0, F@_1, F@_2, F@_3, TrUserData);
+        16 -> d_field_NodeInfo_port(Rest, 0, 0, 0, F@_1, F@_2, F@_3, TrUserData);
+        26 -> d_pfield_NodeInfo_tokens(Rest, 0, 0, 0, F@_1, F@_2, F@_3, TrUserData);
+        24 -> d_field_NodeInfo_tokens(Rest, 0, 0, 0, F@_1, F@_2, F@_3, TrUserData);
         _ ->
             case Key band 7 of
                 0 -> skip_varint_NodeInfo(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, TrUserData);
@@ -1414,13 +1420,26 @@ d_field_NodeInfo_ip(<<0:1, X:7, Rest/binary>>, N, Acc, F, _, F@_2, F@_3, TrUserD
 
 d_field_NodeInfo_port(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, TrUserData) when N < 57 -> d_field_NodeInfo_port(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, TrUserData);
 d_field_NodeInfo_port(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, _, F@_3, TrUserData) ->
-    {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Utf8:Len/binary, Rest2/binary>> = Rest, {id(unicode:characters_to_list(Utf8, unicode), TrUserData), Rest2} end,
+    {NewFValue, RestF} = {id((X bsl N + Acc) band 4294967295, TrUserData), Rest},
     dfp_read_field_def_NodeInfo(RestF, 0, 0, F, F@_1, NewFValue, F@_3, TrUserData).
 
 d_field_NodeInfo_tokens(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, TrUserData) when N < 57 -> d_field_NodeInfo_tokens(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, TrUserData);
 d_field_NodeInfo_tokens(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, Prev, TrUserData) ->
-    {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Utf8:Len/binary, Rest2/binary>> = Rest, {id(unicode:characters_to_list(Utf8, unicode), TrUserData), Rest2} end,
+    {NewFValue, RestF} = {id((X bsl N + Acc) band 18446744073709551615, TrUserData), Rest},
     dfp_read_field_def_NodeInfo(RestF, 0, 0, F, F@_1, F@_2, cons(NewFValue, Prev, TrUserData), TrUserData).
+
+d_pfield_NodeInfo_tokens(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, TrUserData) when N < 57 -> d_pfield_NodeInfo_tokens(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, TrUserData);
+d_pfield_NodeInfo_tokens(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, E, TrUserData) ->
+    Len = X bsl N + Acc,
+    <<PackedBytes:Len/binary, Rest2/binary>> = Rest,
+    NewSeq = d_packed_field_NodeInfo_tokens(PackedBytes, 0, 0, F, E, TrUserData),
+    dfp_read_field_def_NodeInfo(Rest2, 0, 0, F, F@_1, F@_2, NewSeq, TrUserData).
+
+d_packed_field_NodeInfo_tokens(<<1:1, X:7, Rest/binary>>, N, Acc, F, AccSeq, TrUserData) when N < 57 -> d_packed_field_NodeInfo_tokens(Rest, N + 7, X bsl N + Acc, F, AccSeq, TrUserData);
+d_packed_field_NodeInfo_tokens(<<0:1, X:7, Rest/binary>>, N, Acc, F, AccSeq, TrUserData) ->
+    {NewFValue, RestF} = {id((X bsl N + Acc) band 18446744073709551615, TrUserData), Rest},
+    d_packed_field_NodeInfo_tokens(RestF, 0, 0, F, [NewFValue | AccSeq], TrUserData);
+d_packed_field_NodeInfo_tokens(<<>>, 0, 0, _, AccSeq, _) -> AccSeq.
 
 skip_varint_NodeInfo(<<1:1, _:7, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData) -> skip_varint_NodeInfo(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData);
 skip_varint_NodeInfo(<<0:1, _:7, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData) -> dfp_read_field_def_NodeInfo(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData).
@@ -1439,10 +1458,10 @@ skip_32_NodeInfo(<<_:32, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData)
 
 skip_64_NodeInfo(<<_:64, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData) -> dfp_read_field_def_NodeInfo(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, TrUserData).
 
-decode_msg_NodeIp(Bin, TrUserData) -> dfp_read_field_def_NodeIp(Bin, 0, 0, 0, id([], TrUserData), id([], TrUserData), TrUserData).
+decode_msg_NodeIp(Bin, TrUserData) -> dfp_read_field_def_NodeIp(Bin, 0, 0, 0, id([], TrUserData), id(0, TrUserData), TrUserData).
 
 dfp_read_field_def_NodeIp(<<10, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> d_field_NodeIp_ip(Rest, Z1, Z2, F, F@_1, F@_2, TrUserData);
-dfp_read_field_def_NodeIp(<<18, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> d_field_NodeIp_port(Rest, Z1, Z2, F, F@_1, F@_2, TrUserData);
+dfp_read_field_def_NodeIp(<<16, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> d_field_NodeIp_port(Rest, Z1, Z2, F, F@_1, F@_2, TrUserData);
 dfp_read_field_def_NodeIp(<<>>, 0, 0, _, F@_1, F@_2, _) -> #{ip => F@_1, port => F@_2};
 dfp_read_field_def_NodeIp(Other, Z1, Z2, F, F@_1, F@_2, TrUserData) -> dg_read_field_def_NodeIp(Other, Z1, Z2, F, F@_1, F@_2, TrUserData).
 
@@ -1451,7 +1470,7 @@ dg_read_field_def_NodeIp(<<0:1, X:7, Rest/binary>>, N, Acc, _, F@_1, F@_2, TrUse
     Key = X bsl N + Acc,
     case Key of
         10 -> d_field_NodeIp_ip(Rest, 0, 0, 0, F@_1, F@_2, TrUserData);
-        18 -> d_field_NodeIp_port(Rest, 0, 0, 0, F@_1, F@_2, TrUserData);
+        16 -> d_field_NodeIp_port(Rest, 0, 0, 0, F@_1, F@_2, TrUserData);
         _ ->
             case Key band 7 of
                 0 -> skip_varint_NodeIp(Rest, 0, 0, Key bsr 3, F@_1, F@_2, TrUserData);
@@ -1470,7 +1489,7 @@ d_field_NodeIp_ip(<<0:1, X:7, Rest/binary>>, N, Acc, F, _, F@_2, TrUserData) ->
 
 d_field_NodeIp_port(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, TrUserData) when N < 57 -> d_field_NodeIp_port(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, TrUserData);
 d_field_NodeIp_port(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, _, TrUserData) ->
-    {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Utf8:Len/binary, Rest2/binary>> = Rest, {id(unicode:characters_to_list(Utf8, unicode), TrUserData), Rest2} end,
+    {NewFValue, RestF} = {id((X bsl N + Acc) band 4294967295, TrUserData), Rest},
     dfp_read_field_def_NodeIp(RestF, 0, 0, F, F@_1, NewFValue, TrUserData).
 
 skip_varint_NodeIp(<<1:1, _:7, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, TrUserData) -> skip_varint_NodeIp(Rest, Z1, Z2, F, F@_1, F@_2, TrUserData);
@@ -1840,7 +1859,7 @@ v_msg_Message(#{} = M, Path, TrUserData) ->
         _ -> ok
     end,
     case M of
-        #{token := F11} -> v_type_string(F11, [token | Path], TrUserData);
+        #{token := F11} -> v_type_uint64(F11, [token | Path], TrUserData);
         _ -> ok
     end,
     case M of
@@ -2036,15 +2055,15 @@ v_msg_NodeInfo(#{} = M, Path, TrUserData) ->
         _ -> ok
     end,
     case M of
-        #{port := F2} -> v_type_string(F2, [port | Path], TrUserData);
+        #{port := F2} -> v_type_uint32(F2, [port | Path], TrUserData);
         _ -> ok
     end,
     case M of
         #{tokens := F3} ->
             if is_list(F3) ->
-                   _ = [v_type_string(Elem, [tokens | Path], TrUserData) || Elem <- F3],
+                   _ = [v_type_uint64(Elem, [tokens | Path], TrUserData) || Elem <- F3],
                    ok;
-               true -> mk_type_error({invalid_list_of, string}, F3, [tokens | Path])
+               true -> mk_type_error({invalid_list_of, uint64}, F3, [tokens | Path])
             end;
         _ -> ok
     end,
@@ -2070,7 +2089,7 @@ v_msg_NodeIp(#{} = M, Path, TrUserData) ->
         _ -> ok
     end,
     case M of
-        #{port := F2} -> v_type_string(F2, [port | Path], TrUserData);
+        #{port := F2} -> v_type_uint32(F2, [port | Path], TrUserData);
         _ -> ok
     end,
     lists:foreach(fun (ip) -> ok;
@@ -2102,6 +2121,18 @@ v_enum_Type('WRITE', _Path, _TrUserData) -> ok;
 v_enum_Type('NODEIP', _Path, _TrUserData) -> ok;
 v_enum_Type(V, _Path, _TrUserData) when -2147483648 =< V, V =< 2147483647, is_integer(V) -> ok;
 v_enum_Type(X, Path, _TrUserData) -> mk_type_error({invalid_enum, 'Type'}, X, Path).
+
+-compile({nowarn_unused_function,v_type_uint32/3}).
+-dialyzer({nowarn_function,v_type_uint32/3}).
+v_type_uint32(N, _Path, _TrUserData) when is_integer(N), 0 =< N, N =< 4294967295 -> ok;
+v_type_uint32(N, Path, _TrUserData) when is_integer(N) -> mk_type_error({value_out_of_range, uint32, unsigned, 32}, N, Path);
+v_type_uint32(X, Path, _TrUserData) -> mk_type_error({bad_integer, uint32, unsigned, 32}, X, Path).
+
+-compile({nowarn_unused_function,v_type_uint64/3}).
+-dialyzer({nowarn_function,v_type_uint64/3}).
+v_type_uint64(N, _Path, _TrUserData) when is_integer(N), 0 =< N, N =< 18446744073709551615 -> ok;
+v_type_uint64(N, Path, _TrUserData) when is_integer(N) -> mk_type_error({value_out_of_range, uint64, unsigned, 64}, N, Path);
+v_type_uint64(X, Path, _TrUserData) -> mk_type_error({bad_integer, uint64, unsigned, 64}, X, Path).
 
 -compile({nowarn_unused_function,v_type_string/3}).
 -dialyzer({nowarn_function,v_type_string/3}).
@@ -2180,7 +2211,7 @@ get_msg_defs() ->
        #{name => album, fnum => 8, rnum => 9, type => {msg, 'Album'}, occurrence => optional, opts => []},
        #{name => nodeInfo, fnum => 9, rnum => 10, type => {msg, 'NodeInfo'}, occurrence => optional, opts => []},
        #{name => nodesInfo, fnum => 10, rnum => 11, type => {msg, 'NodeInfo'}, occurrence => repeated, opts => []},
-       #{name => token, fnum => 11, rnum => 12, type => string, occurrence => optional, opts => []},
+       #{name => token, fnum => 11, rnum => 12, type => uint64, occurrence => optional, opts => []},
        #{name => nodeIp, fnum => 12, rnum => 13, type => {msg, 'NodeIp'}, occurrence => optional, opts => []}]},
      {{msg, 'Register'}, [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}]},
      {{msg, 'Login'}, [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}]},
@@ -2191,9 +2222,9 @@ get_msg_defs() ->
      {{msg, 'Album'}, [#{name => name, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => files, fnum => 2, rnum => 3, type => string, occurrence => repeated, opts => []}]},
      {{msg, 'NodeInfo'},
       [#{name => ip, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []},
-       #{name => port, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []},
-       #{name => tokens, fnum => 3, rnum => 4, type => string, occurrence => repeated, opts => []}]},
-     {{msg, 'NodeIp'}, [#{name => ip, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => port, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}]}].
+       #{name => port, fnum => 2, rnum => 3, type => uint32, occurrence => defaulty, opts => []},
+       #{name => tokens, fnum => 3, rnum => 4, type => uint64, occurrence => repeated, opts => [packed]}]},
+     {{msg, 'NodeIp'}, [#{name => ip, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => port, fnum => 2, rnum => 3, type => uint32, occurrence => defaulty, opts => []}]}].
 
 
 get_msg_names() -> ['Message', 'Register', 'Login', 'ErrorReply', 'AlbumCreate', 'AlbumGet', 'Albums', 'Album', 'NodeInfo', 'NodeIp'].
@@ -2233,7 +2264,7 @@ find_msg_def('Message') ->
      #{name => album, fnum => 8, rnum => 9, type => {msg, 'Album'}, occurrence => optional, opts => []},
      #{name => nodeInfo, fnum => 9, rnum => 10, type => {msg, 'NodeInfo'}, occurrence => optional, opts => []},
      #{name => nodesInfo, fnum => 10, rnum => 11, type => {msg, 'NodeInfo'}, occurrence => repeated, opts => []},
-     #{name => token, fnum => 11, rnum => 12, type => string, occurrence => optional, opts => []},
+     #{name => token, fnum => 11, rnum => 12, type => uint64, occurrence => optional, opts => []},
      #{name => nodeIp, fnum => 12, rnum => 13, type => {msg, 'NodeIp'}, occurrence => optional, opts => []}];
 find_msg_def('Register') -> [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}];
 find_msg_def('Login') -> [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}];
@@ -2244,9 +2275,9 @@ find_msg_def('Albums') -> [#{name => names, fnum => 1, rnum => 2, type => string
 find_msg_def('Album') -> [#{name => name, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => files, fnum => 2, rnum => 3, type => string, occurrence => repeated, opts => []}];
 find_msg_def('NodeInfo') ->
     [#{name => ip, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []},
-     #{name => port, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []},
-     #{name => tokens, fnum => 3, rnum => 4, type => string, occurrence => repeated, opts => []}];
-find_msg_def('NodeIp') -> [#{name => ip, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => port, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}];
+     #{name => port, fnum => 2, rnum => 3, type => uint32, occurrence => defaulty, opts => []},
+     #{name => tokens, fnum => 3, rnum => 4, type => uint64, occurrence => repeated, opts => [packed]}];
+find_msg_def('NodeIp') -> [#{name => ip, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => port, fnum => 2, rnum => 3, type => uint32, occurrence => defaulty, opts => []}];
 find_msg_def(_) -> error.
 
 
