@@ -13,11 +13,18 @@ public class Main {
     private static final ConfigManager configManager = ConfigManager.getInstance();
 
     private static void runServer() throws IOException, InterruptedException {
+        MetadataManager manager = new MetadataManager();
+
+        Thread entryThread = new Thread(new StartupHandler(manager));
+        entryThread.start();
+
         ServerBuilder.forPort(configManager.getPort())
-                .addService(new DHTService())
+                .addService(new DHTService(manager))
                 .build()
                 .start()
                 .awaitTermination();
+
+        entryThread.wait();
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {

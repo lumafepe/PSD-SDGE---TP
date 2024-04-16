@@ -22,8 +22,8 @@ public class DHTController {
     private MetadataManager metadataManager;
 
 
-    public DHTController() {
-        metadataManager = new MetadataManager();
+    public DHTController(MetadataManager manager) {
+        metadataManager = manager;
     }
 
     public Flowable<ReadResponse> read(ReadRequest request) {
