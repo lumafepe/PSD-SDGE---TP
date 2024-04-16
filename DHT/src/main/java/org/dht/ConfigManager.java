@@ -43,6 +43,7 @@ public class ConfigManager {
         return mod;
     }
 
+    //TODO: Use config .yml file
     public void parseConfig(String[] args) throws IllegalArgumentException {
         if(args.length % 2 == 1)
             throw new IllegalArgumentException("Number of arguments must be odd");

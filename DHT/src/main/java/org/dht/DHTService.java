@@ -11,8 +11,8 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class DHTService extends Rx3DHTServiceGrpc.DHTServiceImplBase {
     private DHTController controller;
 
-    public DHTService() {
-        this.controller = new DHTController();
+    public DHTService(MetadataManager manager) {
+        this.controller = new DHTController(manager);
     }
 
     public Flowable<ReadResponse> read(Single<ReadRequest> request) {
