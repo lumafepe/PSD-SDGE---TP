@@ -66,7 +66,7 @@
         nodeInfo                => 'NodeInfo'(),    % = 9, optional
         nodesInfo               => ['NodeInfo'()],  % = 10, repeated
         token                   => non_neg_integer(), % = 11, optional, 64 bits
-        nodeIp                  => 'NodeIp'()       % = 12, optional
+        nodesIp                 => ['NodeIp'()]     % = 12, repeated
        }.
 
 -type 'Register'() ::
@@ -205,7 +205,11 @@ encode_msg_Message(#{} = M, Bin, TrUserData) ->
               _ -> B10
           end,
     case M of
-        #{nodeIp := F12} -> begin TrF12 = id(F12, TrUserData), e_mfield_Message_nodeIp(TrF12, <<B11/binary, 98>>, TrUserData) end;
+        #{nodesIp := F12} ->
+            TrF12 = id(F12, TrUserData),
+            if TrF12 == [] -> B11;
+               true -> e_field_Message_nodesIp(TrF12, B11, TrUserData)
+            end;
         _ -> B11
     end.
 
@@ -459,10 +463,16 @@ e_field_Message_nodesInfo([Elem | Rest], Bin, TrUserData) ->
     e_field_Message_nodesInfo(Rest, Bin3, TrUserData);
 e_field_Message_nodesInfo([], Bin, _TrUserData) -> Bin.
 
-e_mfield_Message_nodeIp(Msg, Bin, TrUserData) ->
+e_mfield_Message_nodesIp(Msg, Bin, TrUserData) ->
     SubBin = encode_msg_NodeIp(Msg, <<>>, TrUserData),
     Bin2 = e_varint(byte_size(SubBin), Bin),
     <<Bin2/binary, SubBin/binary>>.
+
+e_field_Message_nodesIp([Elem | Rest], Bin, TrUserData) ->
+    Bin2 = <<Bin/binary, 98>>,
+    Bin3 = e_mfield_Message_nodesIp(id(Elem, TrUserData), Bin2, TrUserData),
+    e_field_Message_nodesIp(Rest, Bin3, TrUserData);
+e_field_Message_nodesIp([], Bin, _TrUserData) -> Bin.
 
 e_field_Albums_names([Elem | Rest], Bin, TrUserData) ->
     Bin2 = <<Bin/binary, 10>>,
@@ -673,7 +683,7 @@ decode_msg_Message(Bin, TrUserData) ->
                                id('$undef', TrUserData),
                                id([], TrUserData),
                                id('$undef', TrUserData),
-                               id('$undef', TrUserData),
+                               id([], TrUserData),
                                TrUserData).
 
 dfp_read_field_def_Message(<<8, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
@@ -699,8 +709,8 @@ dfp_read_field_def_Message(<<82, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_
 dfp_read_field_def_Message(<<88, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     d_field_Message_token(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
 dfp_read_field_def_Message(<<98, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
-    d_field_Message_nodeIp(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
-dfp_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, R1, F@_11, F@_12, TrUserData) ->
+    d_field_Message_nodesIp(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+dfp_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, R1, F@_11, R2, TrUserData) ->
     S1 = #{type => F@_1},
     S2 = if F@_2 == '$undef' -> S1;
             true -> S1#{register => F@_2}
@@ -732,8 +742,8 @@ dfp_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@
     S11 = if F@_11 == '$undef' -> S10;
              true -> S10#{token => F@_11}
           end,
-    if F@_12 == '$undef' -> S11;
-       true -> S11#{nodeIp => F@_12}
+    if R2 == '$undef' -> S11;
+       true -> S11#{nodesIp => lists_reverse(R2, TrUserData)}
     end;
 dfp_read_field_def_Message(Other, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     dg_read_field_def_Message(Other, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData).
@@ -754,7 +764,7 @@ dg_read_field_def_Message(<<0:1, X:7, Rest/binary>>, N, Acc, _, F@_1, F@_2, F@_3
         74 -> d_field_Message_nodeInfo(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
         82 -> d_field_Message_nodesInfo(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
         88 -> d_field_Message_token(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
-        98 -> d_field_Message_nodeIp(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+        98 -> d_field_Message_nodesIp(Rest, 0, 0, 0, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
         _ ->
             case Key band 7 of
                 0 -> skip_varint_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
@@ -764,7 +774,7 @@ dg_read_field_def_Message(<<0:1, X:7, Rest/binary>>, N, Acc, _, F@_1, F@_2, F@_3
                 5 -> skip_32_Message(Rest, 0, 0, Key bsr 3, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData)
             end
     end;
-dg_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, R1, F@_11, F@_12, TrUserData) ->
+dg_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, R1, F@_11, R2, TrUserData) ->
     S1 = #{type => F@_1},
     S2 = if F@_2 == '$undef' -> S1;
             true -> S1#{register => F@_2}
@@ -796,8 +806,8 @@ dg_read_field_def_Message(<<>>, 0, 0, _, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_
     S11 = if F@_11 == '$undef' -> S10;
              true -> S10#{token => F@_11}
           end,
-    if F@_12 == '$undef' -> S11;
-       true -> S11#{nodeIp => F@_12}
+    if R2 == '$undef' -> S11;
+       true -> S11#{nodesIp => lists_reverse(R2, TrUserData)}
     end.
 
 d_field_Message_type(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
@@ -1010,29 +1020,11 @@ d_field_Message_token(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@
     {NewFValue, RestF} = {id((X bsl N + Acc) band 18446744073709551615, TrUserData), Rest},
     dfp_read_field_def_Message(RestF, 0, 0, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, NewFValue, F@_12, TrUserData).
 
-d_field_Message_nodeIp(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
-    d_field_Message_nodeIp(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
-d_field_Message_nodeIp(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, Prev, TrUserData) ->
+d_field_Message_nodesIp(<<1:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) when N < 57 ->
+    d_field_Message_nodesIp(Rest, N + 7, X bsl N + Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
+d_field_Message_nodesIp(<<0:1, X:7, Rest/binary>>, N, Acc, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, Prev, TrUserData) ->
     {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_NodeIp(Bs, TrUserData), TrUserData), Rest2} end,
-    dfp_read_field_def_Message(RestF,
-                               0,
-                               0,
-                               F,
-                               F@_1,
-                               F@_2,
-                               F@_3,
-                               F@_4,
-                               F@_5,
-                               F@_6,
-                               F@_7,
-                               F@_8,
-                               F@_9,
-                               F@_10,
-                               F@_11,
-                               if Prev == '$undef' -> NewFValue;
-                                  true -> merge_msg_NodeIp(Prev, NewFValue, TrUserData)
-                               end,
-                               TrUserData).
+    dfp_read_field_def_Message(RestF, 0, 0, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, cons(NewFValue, Prev, TrUserData), TrUserData).
 
 skip_varint_Message(<<1:1, _:7, Rest/binary>>, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData) ->
     skip_varint_Message(Rest, Z1, Z2, F, F@_1, F@_2, F@_3, F@_4, F@_5, F@_6, F@_7, F@_8, F@_9, F@_10, F@_11, F@_12, TrUserData);
@@ -1670,9 +1662,9 @@ merge_msg_Message(PMsg, NMsg, TrUserData) ->
               _ -> S11
           end,
     case {PMsg, NMsg} of
-        {#{nodeIp := PFnodeIp}, #{nodeIp := NFnodeIp}} -> S12#{nodeIp => merge_msg_NodeIp(PFnodeIp, NFnodeIp, TrUserData)};
-        {_, #{nodeIp := NFnodeIp}} -> S12#{nodeIp => NFnodeIp};
-        {#{nodeIp := PFnodeIp}, _} -> S12#{nodeIp => PFnodeIp};
+        {#{nodesIp := PFnodesIp}, #{nodesIp := NFnodesIp}} -> S12#{nodesIp => 'erlang_++'(PFnodesIp, NFnodesIp, TrUserData)};
+        {_, #{nodesIp := NFnodesIp}} -> S12#{nodesIp => NFnodesIp};
+        {#{nodesIp := PFnodesIp}, _} -> S12#{nodesIp => PFnodesIp};
         {_, _} -> S12
     end.
 
@@ -1863,7 +1855,12 @@ v_msg_Message(#{} = M, Path, TrUserData) ->
         _ -> ok
     end,
     case M of
-        #{nodeIp := F12} -> v_submsg_NodeIp(F12, [nodeIp | Path], TrUserData);
+        #{nodesIp := F12} ->
+            if is_list(F12) ->
+                   _ = [v_submsg_NodeIp(Elem, [nodesIp | Path], TrUserData) || Elem <- F12],
+                   ok;
+               true -> mk_type_error({invalid_list_of, {msg, 'NodeIp'}}, F12, [nodesIp | Path])
+            end;
         _ -> ok
     end,
     lists:foreach(fun (type) -> ok;
@@ -1877,7 +1874,7 @@ v_msg_Message(#{} = M, Path, TrUserData) ->
                       (nodeInfo) -> ok;
                       (nodesInfo) -> ok;
                       (token) -> ok;
-                      (nodeIp) -> ok;
+                      (nodesIp) -> ok;
                       (OtherKey) -> mk_type_error({extraneous_key, OtherKey}, M, Path)
                   end,
                   maps:keys(M)),
@@ -2212,7 +2209,7 @@ get_msg_defs() ->
        #{name => nodeInfo, fnum => 9, rnum => 10, type => {msg, 'NodeInfo'}, occurrence => optional, opts => []},
        #{name => nodesInfo, fnum => 10, rnum => 11, type => {msg, 'NodeInfo'}, occurrence => repeated, opts => []},
        #{name => token, fnum => 11, rnum => 12, type => uint64, occurrence => optional, opts => []},
-       #{name => nodeIp, fnum => 12, rnum => 13, type => {msg, 'NodeIp'}, occurrence => optional, opts => []}]},
+       #{name => nodesIp, fnum => 12, rnum => 13, type => {msg, 'NodeIp'}, occurrence => repeated, opts => []}]},
      {{msg, 'Register'}, [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}]},
      {{msg, 'Login'}, [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}]},
      {{msg, 'ErrorReply'}, [#{name => message, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}]},
@@ -2265,7 +2262,7 @@ find_msg_def('Message') ->
      #{name => nodeInfo, fnum => 9, rnum => 10, type => {msg, 'NodeInfo'}, occurrence => optional, opts => []},
      #{name => nodesInfo, fnum => 10, rnum => 11, type => {msg, 'NodeInfo'}, occurrence => repeated, opts => []},
      #{name => token, fnum => 11, rnum => 12, type => uint64, occurrence => optional, opts => []},
-     #{name => nodeIp, fnum => 12, rnum => 13, type => {msg, 'NodeIp'}, occurrence => optional, opts => []}];
+     #{name => nodesIp, fnum => 12, rnum => 13, type => {msg, 'NodeIp'}, occurrence => repeated, opts => []}];
 find_msg_def('Register') -> [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}];
 find_msg_def('Login') -> [#{name => username, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}, #{name => password, fnum => 2, rnum => 3, type => string, occurrence => defaulty, opts => []}];
 find_msg_def('ErrorReply') -> [#{name => message, fnum => 1, rnum => 2, type => string, occurrence => defaulty, opts => []}];

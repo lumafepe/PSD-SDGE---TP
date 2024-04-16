@@ -14,7 +14,7 @@ message Message {
   optional NodeInfo nodeInfo = 9;
   repeated NodeInfo nodesInfo = 10;
   optional uint64 token = 11;
-  optional NodeIp nodeIp = 12;
+  repeated NodeIp nodesIp = 12;
 }
 
 enum Type {
