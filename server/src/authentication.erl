@@ -15,6 +15,8 @@ authenticate(Socket) ->
                 'LOGIN' -> loginHandler(Socket, maps:get(login,Msg));
                 'STARTENTRANCE' -> startEntranceHandler(Socket, maps:get(nodeInfo,Msg));
                 'ENDENTRANCE' -> endEntranceHandler(Socket, maps:get(nodeInfo,Msg));
+                'READ' -> readHandler(Socket,maps:get(token,Msg));
+                'WRITE' -> writeHandler(Socket,maps:get(token,Msg));
                 _ ->
                     answer_manager:errorReply(Socket,"Invalid request"),
                     authenticate(Socket)
@@ -84,5 +86,29 @@ endEntranceHandler(Socket, Data)->
         {error, ErrorMsg} -> 
             io:fwrite("Failed Node connect: ~p:~p, ~p.\n", [Ip,Port,ErrorMsg]),
             answer_manager:errorReply(Socket,ErrorMsg),
+            authenticate(Socket)
+end.
+
+readHandler(Socket, Token) ->
+    case dht_manager:read(Token) of
+        {error, ErrorMsg} ->
+            io:fwrite("Failed get read Node: ~p, ~p.\n", [Token,ErrorMsg]),
+            answer_manager:errorReply(Socket,ErrorMsg),
+            authenticate(Socket);
+        {ok, Data} ->
+            io:fwrite("Found read Node for hash: ~p.\n", [Token]),
+            answer_manager:server(Socket,Data),
+            authenticate(Socket)
+end.
+
+writeHandler(Socket, Token) ->
+    case dht_manager:write(Token) of
+        {error, ErrorMsg} ->
+            io:fwrite("Failed get write Node: ~p, ~p.\n", [Token,ErrorMsg]),
+            answer_manager:errorReply(Socket,ErrorMsg),
+            authenticate(Socket);
+        {ok, Data} ->
+            io:fwrite("Found write Node for hash: ~p.\n", [Token]),
+            answer_manager:server(Socket,Data),
             authenticate(Socket)
 end.

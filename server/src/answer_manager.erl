@@ -1,6 +1,6 @@
 -module(answer_manager).
 
--export([errorReply/2, success/1, listAlbums/2, album/3, nodes/2]).
+-export([errorReply/2, success/1, listAlbums/2, album/3, nodes/2, server/2]).
 
 % reply to request
 errorReply(Socket,Msg) ->
@@ -38,4 +38,8 @@ nodes(Socket,Nodes) ->
     _Nodes = lists:map(fun({Ip,Porta,Tokens}) -> {Ip, Porta,lists:map(fun(V) ->number_to_hex(V) end,Tokens)} end,_NodesAsList),
     Values = lists:map(fun({Ip,Porta,Tokens}) -> #{ip=>Ip,port=>Porta,tokens=>Tokens} end,_Nodes),
     Reply = messages:encode_msg(#{type=>'NODESINFO',nodesInfo=>Values}, 'Message'),
+    gen_tcp:send(Socket,Reply).
+
+server(Socket,{Ip, Port, _}) ->
+    Reply = messages:encode_msg(#{type=>'NODEIP',nodeIp=>#{ip=>Ip,port=>Port}}, 'Message'),
     gen_tcp:send(Socket,Reply).
