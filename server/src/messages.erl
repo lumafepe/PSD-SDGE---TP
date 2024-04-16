@@ -2383,41 +2383,41 @@ fqbins_to_service_and_rpc_name(S, R) -> error({gpb_error, {badservice_or_rpc, {S
 service_and_rpc_name_to_fqbins(S, R) -> error({gpb_error, {badservice_or_rpc, {S, R}}}).
 
 
-fqbin_to_msg_name(<<"protos.Message">>) -> 'Message';
-fqbin_to_msg_name(<<"protos.Register">>) -> 'Register';
-fqbin_to_msg_name(<<"protos.Login">>) -> 'Login';
-fqbin_to_msg_name(<<"protos.ErrorReply">>) -> 'ErrorReply';
-fqbin_to_msg_name(<<"protos.AlbumCreate">>) -> 'AlbumCreate';
-fqbin_to_msg_name(<<"protos.AlbumGet">>) -> 'AlbumGet';
-fqbin_to_msg_name(<<"protos.Albums">>) -> 'Albums';
-fqbin_to_msg_name(<<"protos.Album">>) -> 'Album';
-fqbin_to_msg_name(<<"protos.NodeInfo">>) -> 'NodeInfo';
-fqbin_to_msg_name(<<"protos.NodeIp">>) -> 'NodeIp';
+fqbin_to_msg_name(<<"dht.messages.central.Message">>) -> 'Message';
+fqbin_to_msg_name(<<"dht.messages.central.Register">>) -> 'Register';
+fqbin_to_msg_name(<<"dht.messages.central.Login">>) -> 'Login';
+fqbin_to_msg_name(<<"dht.messages.central.ErrorReply">>) -> 'ErrorReply';
+fqbin_to_msg_name(<<"dht.messages.central.AlbumCreate">>) -> 'AlbumCreate';
+fqbin_to_msg_name(<<"dht.messages.central.AlbumGet">>) -> 'AlbumGet';
+fqbin_to_msg_name(<<"dht.messages.central.Albums">>) -> 'Albums';
+fqbin_to_msg_name(<<"dht.messages.central.Album">>) -> 'Album';
+fqbin_to_msg_name(<<"dht.messages.central.NodeInfo">>) -> 'NodeInfo';
+fqbin_to_msg_name(<<"dht.messages.central.NodeIp">>) -> 'NodeIp';
 fqbin_to_msg_name(E) -> error({gpb_error, {badmsg, E}}).
 
 
-msg_name_to_fqbin('Message') -> <<"protos.Message">>;
-msg_name_to_fqbin('Register') -> <<"protos.Register">>;
-msg_name_to_fqbin('Login') -> <<"protos.Login">>;
-msg_name_to_fqbin('ErrorReply') -> <<"protos.ErrorReply">>;
-msg_name_to_fqbin('AlbumCreate') -> <<"protos.AlbumCreate">>;
-msg_name_to_fqbin('AlbumGet') -> <<"protos.AlbumGet">>;
-msg_name_to_fqbin('Albums') -> <<"protos.Albums">>;
-msg_name_to_fqbin('Album') -> <<"protos.Album">>;
-msg_name_to_fqbin('NodeInfo') -> <<"protos.NodeInfo">>;
-msg_name_to_fqbin('NodeIp') -> <<"protos.NodeIp">>;
+msg_name_to_fqbin('Message') -> <<"dht.messages.central.Message">>;
+msg_name_to_fqbin('Register') -> <<"dht.messages.central.Register">>;
+msg_name_to_fqbin('Login') -> <<"dht.messages.central.Login">>;
+msg_name_to_fqbin('ErrorReply') -> <<"dht.messages.central.ErrorReply">>;
+msg_name_to_fqbin('AlbumCreate') -> <<"dht.messages.central.AlbumCreate">>;
+msg_name_to_fqbin('AlbumGet') -> <<"dht.messages.central.AlbumGet">>;
+msg_name_to_fqbin('Albums') -> <<"dht.messages.central.Albums">>;
+msg_name_to_fqbin('Album') -> <<"dht.messages.central.Album">>;
+msg_name_to_fqbin('NodeInfo') -> <<"dht.messages.central.NodeInfo">>;
+msg_name_to_fqbin('NodeIp') -> <<"dht.messages.central.NodeIp">>;
 msg_name_to_fqbin(E) -> error({gpb_error, {badmsg, E}}).
 
 
-fqbin_to_enum_name(<<"protos.Type">>) -> 'Type';
+fqbin_to_enum_name(<<"dht.messages.central.Type">>) -> 'Type';
 fqbin_to_enum_name(E) -> error({gpb_error, {badenum, E}}).
 
 
-enum_name_to_fqbin('Type') -> <<"protos.Type">>;
+enum_name_to_fqbin('Type') -> <<"dht.messages.central.Type">>;
 enum_name_to_fqbin(E) -> error({gpb_error, {badenum, E}}).
 
 
-get_package_name() -> protos.
+get_package_name() -> 'dht.messages.central'.
 
 
 %% Whether or not the message names
@@ -2464,16 +2464,16 @@ get_enum_containment("messages") -> ['Type'];
 get_enum_containment(P) -> error({gpb_error, {badproto, P}}).
 
 
-get_proto_by_msg_name_as_fqbin(<<"protos.NodeIp">>) -> "messages";
-get_proto_by_msg_name_as_fqbin(<<"protos.Register">>) -> "messages";
-get_proto_by_msg_name_as_fqbin(<<"protos.Albums">>) -> "messages";
-get_proto_by_msg_name_as_fqbin(<<"protos.AlbumGet">>) -> "messages";
-get_proto_by_msg_name_as_fqbin(<<"protos.Message">>) -> "messages";
-get_proto_by_msg_name_as_fqbin(<<"protos.AlbumCreate">>) -> "messages";
-get_proto_by_msg_name_as_fqbin(<<"protos.ErrorReply">>) -> "messages";
-get_proto_by_msg_name_as_fqbin(<<"protos.Album">>) -> "messages";
-get_proto_by_msg_name_as_fqbin(<<"protos.Login">>) -> "messages";
-get_proto_by_msg_name_as_fqbin(<<"protos.NodeInfo">>) -> "messages";
+get_proto_by_msg_name_as_fqbin(<<"dht.messages.central.NodeIp">>) -> "messages";
+get_proto_by_msg_name_as_fqbin(<<"dht.messages.central.Register">>) -> "messages";
+get_proto_by_msg_name_as_fqbin(<<"dht.messages.central.Albums">>) -> "messages";
+get_proto_by_msg_name_as_fqbin(<<"dht.messages.central.AlbumGet">>) -> "messages";
+get_proto_by_msg_name_as_fqbin(<<"dht.messages.central.Message">>) -> "messages";
+get_proto_by_msg_name_as_fqbin(<<"dht.messages.central.AlbumCreate">>) -> "messages";
+get_proto_by_msg_name_as_fqbin(<<"dht.messages.central.ErrorReply">>) -> "messages";
+get_proto_by_msg_name_as_fqbin(<<"dht.messages.central.Album">>) -> "messages";
+get_proto_by_msg_name_as_fqbin(<<"dht.messages.central.Login">>) -> "messages";
+get_proto_by_msg_name_as_fqbin(<<"dht.messages.central.NodeInfo">>) -> "messages";
 get_proto_by_msg_name_as_fqbin(E) -> error({gpb_error, {badmsg, E}}).
 
 
@@ -2481,7 +2481,7 @@ get_proto_by_msg_name_as_fqbin(E) -> error({gpb_error, {badmsg, E}}).
 get_proto_by_service_name_as_fqbin(E) -> error({gpb_error, {badservice, E}}).
 
 
-get_proto_by_enum_name_as_fqbin(<<"protos.Type">>) -> "messages";
+get_proto_by_enum_name_as_fqbin(<<"dht.messages.central.Type">>) -> "messages";
 get_proto_by_enum_name_as_fqbin(E) -> error({gpb_error, {badenum, E}}).
 
 
