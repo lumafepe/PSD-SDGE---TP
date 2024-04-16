@@ -27,7 +27,7 @@ public class TestClient {
             long offset = 0;
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 result.add(WriteRequest.newBuilder()
-                        .setHash("asdasdd")
+                        .setHash("694202021")
                         .setData(ByteString.copyFrom(buffer.clone()))
                         .setOffset(offset)
                         .build());
@@ -44,13 +44,14 @@ public class TestClient {
                 .usePlaintext()
                 .build();
         var stub = Rx3DHTServiceGrpc.newRxStub(channel);
-        stub.write(Flowable.fromIterable(readFile("/home/ruioliveira02/Pictures/background.jpg", 4096))
+
+        stub.write(Flowable.fromIterable(readFile("/home/rui-oliveira02/Pictures/background.jpg", 4096))
                 )
-                .map(m -> m.getSuccessValue())
+                .map(WriteResponse::getSuccessValue)
                 .map(n -> "Result: " + n)
                 .blockingSubscribe(System.out::println);
 
-        FileOutputStream file = new FileOutputStream("/home/ruioliveira02/Pictures/teste213.jpg");
+     /*   FileOutputStream file = new FileOutputStream("/home/rui-oliveira02/Pictures/teste213.jpg");
         stub.read(Single.just(ReadRequest.newBuilder().setHash("asdasdd").build())
                 )
                 .map(m -> {
@@ -59,13 +60,7 @@ public class TestClient {
                 })
                 .blockingSubscribe(System.out::println);
         file.close();
-
-        /*stub.echoMsg(Single.just("Hello")
-                        .map(n -> Message.newBuilder().setData(n).build())
-                )
-                .map(m -> m.getData())
-                .map(n -> "Result: " + n)
-                .blockingSubscribe(System.out::println);*/
+*/
     }
 
 }
