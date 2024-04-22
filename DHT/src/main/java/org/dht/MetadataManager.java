@@ -39,15 +39,22 @@ public class MetadataManager {
         }
     }
 
-    public void newServer(InetSocketAddress address, Collection<Long> tokens) {
+    public Set<Long> getMyTokens() {
+        Set<Long> result = new TreeSet<>();
+        result.addAll(this.myTokens);
+        return result;
+    }
+
+    public void serverEntered(InetSocketAddress address, Collection<Long> tokens) {
         this.allWriteTokens.addAll(tokens);
+        this.allReadTokens.addAll(tokens);
 
         for(Long l : tokens) {
             this.ipMap.put(l, address);
         }
     }
 
-    public void serverEntered(InetSocketAddress address, Collection<Long> tokens) {
+    public void serverIsEntering(InetSocketAddress address, Collection<Long> tokens) {
         this.allReadTokens.addAll(tokens);
     }
 
