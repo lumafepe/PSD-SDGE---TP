@@ -8,11 +8,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.util.Iterator;
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.util.*;
 import java.util.concurrent.Flow;
 
 public class DHTController {
@@ -24,6 +22,40 @@ public class DHTController {
 
     public DHTController(MetadataManager manager) {
         metadataManager = manager;
+    }
+
+    public Flowable<WriteRequest> transfer(TransferRequest request) {
+        return Flowable.create(sub -> {
+            metadataManager.serverIsEntering(new InetSocketAddress(request.getIp(), request.getPort()), request.getTokenList());
+            Queue<String> hashesToTransfer = hashesToTransfer(request.getTokenList());
+
+            while(!hashesToTransfer.isEmpty()) {
+                String cur = hashesToTransfer.peek();
+
+                try (FileInputStream file = new FileInputStream(configManager.getBaseDirectory() + cur)) {
+                    byte[] buffer = new byte[4096];
+
+                    int read = file.read(buffer);
+                    long offset = 0;
+                    while(read > 0) {
+                        offset += read;
+                        sub.onNext(WriteRequest.newBuilder()
+                                .setHash(cur)
+                                .setData(ByteString.copyFrom(buffer, 0, read))
+                                .setOffset(offset)
+                                .build());
+                        read = file.read(buffer);
+                    }
+
+                } catch(IOException e) {
+                    logger.error("An exception occurred: ", e);
+                    sub.onComplete();
+                    return;
+                }
+
+                hashesToTransfer.remove();
+            }
+        }, BackpressureStrategy.BUFFER);
     }
 
     public Flowable<ReadResponse> read(ReadRequest request) {
@@ -95,5 +127,23 @@ public class DHTController {
             return r1;
         }
         return r2;
+    }
+
+    private Queue<String> hashesToTransfer(Collection<Long> tokens) {
+        Queue<String> result = new ArrayDeque<>();
+
+        File directory = new File(ConfigManager.getInstance().getBaseDirectory());
+        for(File file : directory.listFiles()) {
+            String hash = file.getName();
+            long position = TokenGenerator.hashToRing(hash, ConfigManager.getInstance().getMod());
+
+            for(Long token : tokens) {
+                if(metadataManager.shouldBeTransferred(position, token)) {
+                    result.add(hash);
+                }
+            }
+        }
+
+        return result;
     }
 }

@@ -2,9 +2,16 @@ package org.dht;
 
 import com.google.common.io.ByteStreams;
 import com.google.protobuf.ByteString;
+import dht.messages.Rx3DHTServiceGrpc;
+import dht.messages.TransferRequest;
+import dht.messages.WriteResponse;
 import dht.messages.central.Message;
 import dht.messages.central.NodeInfo;
 import dht.messages.central.Type;
+import io.grpc.ManagedChannelBuilder;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Node;
@@ -91,6 +98,18 @@ public class StartupHandler implements Runnable {
         Logger logger = LogManager.getLogger();
         for(Map.Entry<Long, InetSocketAddress> entry : serversToContact.entrySet()) {
             logger.info("Transfering from " + entry.getValue().toString());
+
+            var channel = ManagedChannelBuilder.forAddress(entry.getValue().getHostName(), entry.getValue().getPort())
+                    .usePlaintext()
+                    .build();
+
+            var stub = Rx3DHTServiceGrpc.newRxStub(channel);
+
+            stub.transfer(Single.just(TransferRequest.newBuilder()
+                            .addAllToken(metadataManager.getMyTokens())
+                            .build())
+                            .subscribeOn(Schedulers.io()))
+                    .subscribe(req -> new DHTController(metadataManager).write(req));
         }
     }
 

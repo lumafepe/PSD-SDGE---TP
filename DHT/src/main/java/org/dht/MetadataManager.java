@@ -44,6 +44,16 @@ public class MetadataManager {
         return result;
     }
 
+    public boolean shouldBeTransferred(long filePosition, long serverPosition) {
+        if(filePosition <= serverPosition)
+            return true;
+
+        if(this.allWriteTokens.ceiling(filePosition) == null && serverPosition == this.allWriteTokens.first())
+            return true;
+
+        return false;
+    }
+
     public void serverEntered(InetSocketAddress address, Collection<Long> tokens) {
         this.allWriteTokens.addAll(tokens);
         this.allReadTokens.addAll(tokens);
