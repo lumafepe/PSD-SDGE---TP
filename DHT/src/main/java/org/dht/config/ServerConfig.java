@@ -3,8 +3,6 @@ package org.dht.config;
 import com.google.common.net.InetAddresses;
 import org.dht.exceptions.InvalidConfigurationFileException;
 
-import java.io.File;
-
 public class ServerConfig {
 
     private String address;

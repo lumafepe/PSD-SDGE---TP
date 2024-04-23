@@ -51,12 +51,9 @@ public class MetadataManager {
         if(filePosition <= serverPosition && serverPosition <= responsibleToken)
             return true;
 
-        if(responsibleToken == this.myTokens.first().longValue()
+        return responsibleToken == this.myTokens.first()
                 && ((this.myTokens.ceiling(serverPosition) == null && filePosition <= serverPosition)) ||
-                (serverPosition < this.myTokens.first().longValue() && filePosition >= responsibleToken))
-            return true;
-
-        return false;
+                (serverPosition < this.myTokens.first() && filePosition >= responsibleToken);
     }
 
     public void serverEntered(InetSocketAddress address, Collection<Long> tokens) {

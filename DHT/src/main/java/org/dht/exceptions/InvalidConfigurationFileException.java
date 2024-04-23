@@ -5,7 +5,4 @@ public class InvalidConfigurationFileException extends Exception {
         super(message);
     }
 
-    public InvalidConfigurationFileException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }
