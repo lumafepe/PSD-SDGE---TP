@@ -4,18 +4,18 @@ package dht.messages.central;
 option java_multiple_files = true;
 
 message Message {
-    Type type = 1;
-    optional Register register = 2;
-    optional Login login = 3;
-    optional ErrorReply reply = 4;
-    optional AlbumCreate albumCreate = 5;
-    optional AlbumGet albumGet = 6;
-    optional Albums albums = 7;
-    optional Album album = 8;
-    optional NodeInfo nodeInfo = 9;
-    repeated NodeInfo nodesInfo = 10;
-    optional uint64 token = 11;
-    optional NodeIp nodeIp = 12;
+  Type type = 1;
+  optional Register register = 2;
+  optional Login login = 3;
+  optional ErrorReply reply = 4;
+  optional AlbumCreate albumCreate = 5;
+  optional AlbumGet albumGet = 6;
+  optional Albums albums = 7;
+  optional Album album = 8;
+  optional NodeInfo nodeInfo = 9;
+  repeated NodeInfo nodesInfo = 10;
+  optional uint64 token = 11;
+  repeated NodeIp nodesIp = 12;
 }
 
 enum Type {

@@ -2,14 +2,22 @@ package org.dht;
 
 import com.google.common.io.ByteStreams;
 import com.google.protobuf.ByteString;
+import dht.messages.Rx3DHTServiceGrpc;
+import dht.messages.TransferRequest;
+import dht.messages.WriteResponse;
 import dht.messages.central.Message;
 import dht.messages.central.NodeInfo;
 import dht.messages.central.Type;
+import io.grpc.ManagedChannelBuilder;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Node;
 
 import java.io.IOException;
+import java.io.ObjectInputFilter;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -41,9 +49,22 @@ public class StartupHandler implements Runnable {
         Message reply = send(Message.newBuilder()
                             .setType(Type.STARTENTRANCE)
                             .setNodeInfo(NodeInfo.newBuilder()
-                                    .addAllTokens(metadataManager.getMyTokens()))
+                                    .addAllTokens(metadataManager.getMyTokens())
+                                    .setPort(ConfigManager.getInstance().getPort())
+                                    .setIp("127.0.0.1") //TODO: Fix
+                                    .build())
                             .build());
 
+        if(reply.getType() == Type.ERRORREPLY) {
+            Logger logger = LogManager.getLogger();
+            logger.error("Node already connecting. Retrying in 60 seconds");
+            
+            try {
+                Thread.sleep(60000);
+            } catch(InterruptedException e){}
+
+            return announceEntry();
+        }
         return reply.getNodesInfoList();
     }
 
@@ -74,6 +95,10 @@ public class StartupHandler implements Runnable {
                               Map<Long, InetSocketAddress> tokenServerMapping, TreeSet<Long> serverTokens) {
 
         for(NodeInfo node : nodeInfos) {
+            //TODO: Generalize
+            if(node.getPort() == ConfigManager.getInstance().getPort())
+                continue;
+
             InetSocketAddress address = new InetSocketAddress(node.getIp(), node.getPort());
             List<Long> nodeTokens = new ArrayList<>();
 
@@ -89,8 +114,20 @@ public class StartupHandler implements Runnable {
 
     private void copyData(Map<Long, InetSocketAddress> serversToContact) {
         Logger logger = LogManager.getLogger();
-        for(Map.Entry<Long, InetSocketAddress> entry : serversToContact.entrySet()) {
-            logger.info("Transfering from " + entry.getValue().toString());
+        for(InetSocketAddress server : new HashSet<>(serversToContact.values())) {
+            logger.info("Transfering from " + server.toString());
+
+            var channel = ManagedChannelBuilder.forAddress(server.getHostName(), server.getPort())
+                    .usePlaintext()
+                    .build();
+
+            var stub = Rx3DHTServiceGrpc.newRxStub(channel);
+
+            stub.transfer(Single.just(TransferRequest.newBuilder()
+                            .addAllToken(metadataManager.getMyTokens())
+                            .build())
+                            .subscribeOn(Schedulers.io()))
+                    .blockingSubscribe(req -> new DHTController(metadataManager).write(req));
         }
     }
 
@@ -98,7 +135,10 @@ public class StartupHandler implements Runnable {
         send(Message.newBuilder()
                 .setType(Type.ENDENTRANCE)
                 .setNodeInfo(NodeInfo.newBuilder()
-                        .addAllTokens(metadataManager.getMyTokens()))
+                        .addAllTokens(metadataManager.getMyTokens())
+                        .setPort(ConfigManager.getInstance().getPort())
+                        .setIp("127.0.0.1") //TODO: Fix
+                        .build())
                 .build());
     }
 

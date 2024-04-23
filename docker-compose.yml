@@ -1,0 +1,9 @@
+services:
+  central_server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "4321:4321"
+    stdin_open: true
+    tty: true

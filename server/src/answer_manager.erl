@@ -27,6 +27,7 @@ nodes(Socket,Nodes) ->
     Reply = messages:encode_msg(#{type=>'NODESINFO',nodesInfo=>Values}, 'Message'),
     gen_tcp:send(Socket,Reply).
 
-server(Socket,{Ip, Port, _}) ->
-    Reply = messages:encode_msg(#{type=>'NODEIP',nodeIp=>#{ip=>Ip,port=>Port}}, 'Message'),
+server(Socket,Servers) ->
+    Data=lists:map(fun({Ip, Port, _})->#{ip=>Ip,port=>Port} end,sets:to_list(Servers)),
+    Reply = messages:encode_msg(#{type=>'NODEIP',nodesIp=>Data}, 'Message'),
     gen_tcp:send(Socket,Reply).
