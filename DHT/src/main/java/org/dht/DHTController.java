@@ -6,12 +6,11 @@ import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
+import org.dht.config.ConfigManager;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.util.*;
-import java.util.concurrent.Flow;
 
 public class DHTController {
     private static final Logger logger = LogManager.getLogger();
@@ -32,7 +31,7 @@ public class DHTController {
             while(!hashesToTransfer.isEmpty()) {
                 String cur = hashesToTransfer.peek();
 
-                try (FileInputStream file = new FileInputStream(configManager.getBaseDirectory() + cur)) {
+                try (FileInputStream file = new FileInputStream(configManager.getConfig().getDht().getBaseDirectory() + cur)) {
                     byte[] buffer = new byte[4096];
                     int read = file.read(buffer);
                     long offset = 0;
@@ -69,7 +68,7 @@ public class DHTController {
 
         return Flowable.create(sub -> {
             try(FileInputStream stream = new FileInputStream(
-                    configManager.getBaseDirectory() + request.getHash())) {
+                    configManager.getConfig().getDht().getBaseDirectory() + request.getHash())) {
                 logger.info("ReadRequest Hash: {}", request.getHash());
                 byte[] buffer = new byte[4096];
                 while(stream.read(buffer) != -1) {
@@ -106,7 +105,7 @@ public class DHTController {
         }
 
         logger.info("WriteRequest Hash: {} Offset: {}", request.getHash(), request.getOffset());
-        try (RandomAccessFile file = new RandomAccessFile(configManager.getBaseDirectory() + request.getHash(), "rw")) {
+        try (RandomAccessFile file = new RandomAccessFile(configManager.getConfig().getDht().getBaseDirectory() + request.getHash(), "rw")) {
             file.seek(request.getOffset());
             file.write(request.getData().toByteArray());
 
@@ -132,10 +131,10 @@ public class DHTController {
     private Queue<String> hashesToTransfer(Collection<Long> tokens) {
         Set<String> result = new HashSet<>();
 
-        File directory = new File(ConfigManager.getInstance().getBaseDirectory());
+        File directory = new File(configManager.getConfig().getDht().getBaseDirectory());
         for(File file : directory.listFiles()) {
             String hash = file.getName();
-            long position = TokenGenerator.hashToRing(hash, ConfigManager.getInstance().getMod());
+            long position = TokenGenerator.hashToRing(hash, ConfigManager.getInstance().getConfig().getDht().getMod());
 
             for(Long token : tokens) {
                 if(metadataManager.shouldBeTransferred(position, token)) {

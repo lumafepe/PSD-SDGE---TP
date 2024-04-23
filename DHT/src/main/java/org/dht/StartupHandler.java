@@ -1,24 +1,18 @@
 package org.dht;
 
-import com.google.common.io.ByteStreams;
-import com.google.protobuf.ByteString;
 import dht.messages.Rx3DHTServiceGrpc;
 import dht.messages.TransferRequest;
-import dht.messages.WriteResponse;
 import dht.messages.central.Message;
 import dht.messages.central.NodeInfo;
 import dht.messages.central.Type;
 import io.grpc.ManagedChannelBuilder;
-import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.w3c.dom.Node;
+import org.dht.config.ConfigManager;
 
 import java.io.IOException;
-import java.io.ObjectInputFilter;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -38,7 +32,7 @@ public class StartupHandler implements Runnable {
         List<NodeInfo> nodes = announceEntry();
         logger.info("Entry announced. Computing servers to contact");
         Map<Long, InetSocketAddress> serversToContact = computeServersToCopyFrom(nodes);
-        logger.info("Transfering data");
+        logger.info("Transferring data");
         copyData(serversToContact);
         logger.info("Announcing entry terminated");
         concludeEntry();
@@ -50,7 +44,7 @@ public class StartupHandler implements Runnable {
                             .setType(Type.STARTENTRANCE)
                             .setNodeInfo(NodeInfo.newBuilder()
                                     .addAllTokens(metadataManager.getMyTokens())
-                                    .setPort(ConfigManager.getInstance().getPort())
+                                    .setPort(ConfigManager.getInstance().getConfig().getDht().getPort())
                                     .setIp("127.0.0.1") //TODO: Fix
                                     .build())
                             .build());
@@ -96,7 +90,7 @@ public class StartupHandler implements Runnable {
 
         for(NodeInfo node : nodeInfos) {
             //TODO: Generalize
-            if(node.getPort() == ConfigManager.getInstance().getPort())
+            if(node.getPort() == ConfigManager.getInstance().getConfig().getDht().getPort())
                 continue;
 
             InetSocketAddress address = new InetSocketAddress(node.getIp(), node.getPort());
@@ -136,7 +130,7 @@ public class StartupHandler implements Runnable {
                 .setType(Type.ENDENTRANCE)
                 .setNodeInfo(NodeInfo.newBuilder()
                         .addAllTokens(metadataManager.getMyTokens())
-                        .setPort(ConfigManager.getInstance().getPort())
+                        .setPort(ConfigManager.getInstance().getConfig().getDht().getPort())
                         .setIp("127.0.0.1") //TODO: Fix
                         .build())
                 .build());
@@ -144,8 +138,9 @@ public class StartupHandler implements Runnable {
 
     private Message send(Message msg) {
         Logger logger = LogManager.getLogger();
+
         //TODO: Change
-        try(Socket clientSocket = new Socket("127.0.0.1", 4321)) {
+        try (Socket clientSocket = new Socket("127.0.0.1", 4321)) {
             clientSocket.getOutputStream().write(msg.toByteArray());
             byte[] buffer = new byte[1048576];
             int read = clientSocket.getInputStream().read(buffer);

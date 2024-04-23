@@ -1,6 +1,7 @@
 package org.dht;
 
 import org.apache.logging.log4j.LogManager;
+import org.dht.config.ConfigManager;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -34,7 +35,7 @@ public class MetadataManager {
         for(Long l : this.myTokens) {
             this.allReadTokens.add(l);
             this.allWriteTokens.add(l);
-            this.ipMap.put(l, new InetSocketAddress(ip, ConfigManager.getInstance().getPort()));
+            this.ipMap.put(l, new InetSocketAddress(ip, ConfigManager.getInstance().getConfig().getDht().getPort()));
         }
     }
 
@@ -80,7 +81,7 @@ public class MetadataManager {
     }
 
     private boolean isAuthoritative(String hash, TreeSet<Long> tokens) {
-        long position = TokenGenerator.hashToRing(hash, ConfigManager.getInstance().getMod());
+        long position = TokenGenerator.hashToRing(hash, ConfigManager.getInstance().getConfig().getDht().getMod());
 
         Long token = tokens.ceiling(position);
         if(token == null) {
@@ -93,7 +94,7 @@ public class MetadataManager {
     private void generateTokens() {
         ConfigManager configManager = ConfigManager.getInstance();
         this.myTokens = new TreeSet<>();
-        this.myTokens.addAll(TokenGenerator.generateTokens(configManager.getTokenCount(), configManager.getMod()));
+        this.myTokens.addAll(TokenGenerator.generateTokens(configManager.getConfig().getDht().getTokenCount(), configManager.getConfig().getDht().getMod()));
     }
 
     private long getResponsibleToken(long position) {
@@ -101,6 +102,6 @@ public class MetadataManager {
         if(responsibleToken == null)
             responsibleToken = this.myTokens.first();
 
-        return responsibleToken.longValue();
+        return responsibleToken;
     }
 }
