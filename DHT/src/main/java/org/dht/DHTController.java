@@ -130,7 +130,7 @@ public class DHTController {
     }
 
     private Queue<String> hashesToTransfer(Collection<Long> tokens) {
-        Queue<String> result = new ArrayDeque<>();
+        Set<String> result = new HashSet<>();
 
         File directory = new File(ConfigManager.getInstance().getBaseDirectory());
         for(File file : directory.listFiles()) {
@@ -144,6 +144,6 @@ public class DHTController {
             }
         }
 
-        return result;
+        return new ArrayDeque<>(result);
     }
 }

@@ -45,10 +45,14 @@ public class MetadataManager {
     }
 
     public boolean shouldBeTransferred(long filePosition, long serverPosition) {
-        if(filePosition <= serverPosition)
+        long responsibleToken = this.getResponsibleToken(filePosition);
+
+        if(filePosition <= serverPosition && serverPosition <= responsibleToken)
             return true;
 
-        if(this.allWriteTokens.ceiling(filePosition) == null && serverPosition == this.allWriteTokens.first())
+        if(responsibleToken == this.myTokens.first().longValue()
+                && ((this.myTokens.ceiling(serverPosition) == null && filePosition <= serverPosition)) ||
+                (serverPosition < this.myTokens.first().longValue() && filePosition >= responsibleToken))
             return true;
 
         return false;
@@ -64,7 +68,7 @@ public class MetadataManager {
     }
 
     public void serverIsEntering(InetSocketAddress address, Collection<Long> tokens) {
-        this.allReadTokens.addAll(tokens);
+        this.allWriteTokens.addAll(tokens);
     }
 
     public boolean isWriteAuthoritative(String hash) {
@@ -90,5 +94,13 @@ public class MetadataManager {
         ConfigManager configManager = ConfigManager.getInstance();
         this.myTokens = new TreeSet<>();
         this.myTokens.addAll(TokenGenerator.generateTokens(configManager.getTokenCount(), configManager.getMod()));
+    }
+
+    private long getResponsibleToken(long position) {
+        Long responsibleToken = this.myTokens.ceiling(position);
+        if(responsibleToken == null)
+            responsibleToken = this.myTokens.first();
+
+        return responsibleToken.longValue();
     }
 }

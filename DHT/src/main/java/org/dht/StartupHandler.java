@@ -55,13 +55,21 @@ public class StartupHandler implements Runnable {
                                     .build())
                             .build());
 
+        if(reply.getType() == Type.ERRORREPLY) {
+            Logger logger = LogManager.getLogger();
+            logger.error("Node already connecting. Retrying in 60 seconds");
+            
+            try {
+                Thread.sleep(60000);
+            } catch(InterruptedException e){}
+
+            return announceEntry();
+        }
         return reply.getNodesInfoList();
     }
 
     private Map<Long, InetSocketAddress> computeServersToCopyFrom(List<NodeInfo> nodeInfos) {
         Map<Long, InetSocketAddress> tokenServerMapping = new HashMap<>();
-        if(nodeInfos.size() == 1)
-            return tokenServerMapping;
         TreeSet<Long> serverTokens = new TreeSet<>();
 
         processNodes(nodeInfos, tokenServerMapping, serverTokens);
@@ -106,10 +114,10 @@ public class StartupHandler implements Runnable {
 
     private void copyData(Map<Long, InetSocketAddress> serversToContact) {
         Logger logger = LogManager.getLogger();
-        for(Map.Entry<Long, InetSocketAddress> entry : serversToContact.entrySet()) {
-            logger.info("Transfering from " + entry.getValue().toString());
+        for(InetSocketAddress server : new HashSet<>(serversToContact.values())) {
+            logger.info("Transfering from " + server.toString());
 
-            var channel = ManagedChannelBuilder.forAddress(entry.getValue().getHostName(), entry.getValue().getPort())
+            var channel = ManagedChannelBuilder.forAddress(server.getHostName(), server.getPort())
                     .usePlaintext()
                     .build();
 
