@@ -17,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Node;
 
 import java.io.IOException;
+import java.io.ObjectInputFilter;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -48,7 +49,10 @@ public class StartupHandler implements Runnable {
         Message reply = send(Message.newBuilder()
                             .setType(Type.STARTENTRANCE)
                             .setNodeInfo(NodeInfo.newBuilder()
-                                    .addAllTokens(metadataManager.getMyTokens()))
+                                    .addAllTokens(metadataManager.getMyTokens())
+                                    .setPort(ConfigManager.getInstance().getPort())
+                                    .setIp("127.0.0.1") //TODO: Fix
+                                    .build())
                             .build());
 
         return reply.getNodesInfoList();
@@ -56,6 +60,8 @@ public class StartupHandler implements Runnable {
 
     private Map<Long, InetSocketAddress> computeServersToCopyFrom(List<NodeInfo> nodeInfos) {
         Map<Long, InetSocketAddress> tokenServerMapping = new HashMap<>();
+        if(nodeInfos.size() == 1)
+            return tokenServerMapping;
         TreeSet<Long> serverTokens = new TreeSet<>();
 
         processNodes(nodeInfos, tokenServerMapping, serverTokens);
@@ -81,6 +87,10 @@ public class StartupHandler implements Runnable {
                               Map<Long, InetSocketAddress> tokenServerMapping, TreeSet<Long> serverTokens) {
 
         for(NodeInfo node : nodeInfos) {
+            //TODO: Generalize
+            if(node.getPort() == ConfigManager.getInstance().getPort())
+                continue;
+
             InetSocketAddress address = new InetSocketAddress(node.getIp(), node.getPort());
             List<Long> nodeTokens = new ArrayList<>();
 
@@ -109,7 +119,7 @@ public class StartupHandler implements Runnable {
                             .addAllToken(metadataManager.getMyTokens())
                             .build())
                             .subscribeOn(Schedulers.io()))
-                    .subscribe(req -> new DHTController(metadataManager).write(req));
+                    .blockingSubscribe(req -> new DHTController(metadataManager).write(req));
         }
     }
 
@@ -117,7 +127,10 @@ public class StartupHandler implements Runnable {
         send(Message.newBuilder()
                 .setType(Type.ENDENTRANCE)
                 .setNodeInfo(NodeInfo.newBuilder()
-                        .addAllTokens(metadataManager.getMyTokens()))
+                        .addAllTokens(metadataManager.getMyTokens())
+                        .setPort(ConfigManager.getInstance().getPort())
+                        .setIp("127.0.0.1") //TODO: Fix
+                        .build())
                 .build());
     }
 

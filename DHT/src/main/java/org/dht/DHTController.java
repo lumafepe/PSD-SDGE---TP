@@ -34,18 +34,18 @@ public class DHTController {
 
                 try (FileInputStream file = new FileInputStream(configManager.getBaseDirectory() + cur)) {
                     byte[] buffer = new byte[4096];
-
                     int read = file.read(buffer);
                     long offset = 0;
                     while(read > 0) {
-                        offset += read;
                         sub.onNext(WriteRequest.newBuilder()
-                                .setHash(cur)
-                                .setData(ByteString.copyFrom(buffer, 0, read))
-                                .setOffset(offset)
-                                .build());
+                                    .setOffset(offset)
+                                        .setHash(cur)
+                                    .setData(ByteString.copyFrom(buffer, 0, read))
+                                    .build());
+                        offset += read;
                         read = file.read(buffer);
                     }
+                    sub.onComplete();
 
                 } catch(IOException e) {
                     logger.error("An exception occurred: ", e);

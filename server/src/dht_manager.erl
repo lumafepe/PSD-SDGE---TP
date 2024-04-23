@@ -35,14 +35,8 @@ findNearest(Hashdict, Hash, Write) ->
 
 start() ->
     Nodes = #{ 
-        {"localhost",1234} => sets:from_list([str2Hash("28b92b56ee64b92ebb72d865f172ef00c708df83"),str2Hash("097d77c23f92f9125db3aab09f23fc6b3401e2b0"),str2Hash("74ad1db8d2b1da079f3b8f3f93807e907c9f0f3f"),str2Hash("72019bbac0b3dac88beac9ddfef0ca808919104f"),str2Hash("0213e69386181c759ffa6dfb5d4911b5088163f8")])
     },
     Sections = orddict:from_list([
-        {str2Hash("0213e69386181c759ffa6dfb5d4911b5088163f8"),sets:from_list([{"localhost",1234,true}])},
-        {str2Hash("097d77c23f92f9125db3aab09f23fc6b3401e2b0"),sets:from_list([{"localhost",1234,true}])},
-        {str2Hash("28b92b56ee64b92ebb72d865f172ef00c708df83"),sets:from_list([{"localhost",1234,true}])},
-        {str2Hash("72019bbac0b3dac88beac9ddfef0ca808919104f"),sets:from_list([{"localhost",1234,true}])},
-        {str2Hash("74ad1db8d2b1da079f3b8f3f93807e907c9f0f3f"),sets:from_list([{"localhost",1234,true}])}
     ]),
     Joining = false,
     register(?MODULE, spawn(fun() -> loop(Nodes,Sections,Joining) end)).
