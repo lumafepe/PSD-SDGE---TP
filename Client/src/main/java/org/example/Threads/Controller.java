@@ -1,5 +1,10 @@
-package org.example;
+package org.example.Threads;
 
+import org.example.CBcast;
+import org.example.CRDTs.GOSet;
+import org.example.CRDTs.ORset;
+import org.example.CRDTs.Operation;
+import org.example.Rating;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
@@ -8,25 +13,29 @@ public class Controller extends Thread{
     GOSet fileRatingsCRDT;
     ORset filesCRDT;
     ORset usersCRDT;
+    CBcast causalBroadcast;
 
     public Controller() {
         this.fileRatingsCRDT = new GOSet();
         this.filesCRDT = new ORset();
         this.usersCRDT = new ORset();
+        this.causalBroadcast = new CBcast();
     }
 
     // Sockets Sub, Pub
     public void run() {
         System.out.println("Controller started working");
         try (ZContext context = new ZContext();
-             ZMQ.Socket subscriber = context.createSocket(SocketType.SUB)) {
+             ZMQ.Socket subscriber = context.createSocket(SocketType.SUB);
+             ZMQ.Socket broadcast = context.createSocket(SocketType.PUSH)) {
             subscriber.connect("tcp://localhost:5001");
+            subscriber.connect("tcp://localhost:5003");
             subscriber.subscribe("");
+            broadcast.connect("tcp://localhost:5002");
 
             while (true) {
                 byte[] line = subscriber.recv();
                 String msgReceived = new String(line);
-                System.out.println("CONTROLLER: Received line: " + msgReceived);
 
                 if (msgReceived.startsWith("/chat")) {
                     continue;
@@ -57,7 +66,11 @@ public class Controller extends Thread{
 
                     String pid = String.valueOf(ProcessHandle.current().pid());
                     int intRating = Integer.parseInt(rating);
-                    this.fileRatingsCRDT.addRating(new Rating(pid, fileName, intRating));
+                    Operation o = this.fileRatingsCRDT.addRating(new Rating(pid, fileName, intRating));
+
+                    byte[] operationSerialized = o.serialize();
+                    System.out.println("Serialized data: " + operationSerialized);
+                    broadcast.send(operationSerialized);
                 }
                 else if (msgReceived.startsWith("/listRates")) {
                     if (this.fileRatingsCRDT.getRatings().isEmpty()) {
@@ -68,7 +81,8 @@ public class Controller extends Thread{
                     }
                 }
                 else {
-                    System.out.println("Unknown message: " + msgReceived);
+                    Operation o = Operation.deserialize(msgReceived.getBytes());
+                    System.out.println("Received operation: " + o);
                 }
             }
         }

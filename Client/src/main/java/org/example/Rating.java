@@ -1,6 +1,8 @@
 package org.example;
 
-class Rating {
+import java.io.Serializable;
+
+public class Rating implements Serializable {
     String user;
     String fileName;
     int rating;

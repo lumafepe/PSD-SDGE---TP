@@ -1,7 +1,6 @@
-package org.example;
+package org.example.CRDTs;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Set;
 
 public class ORset {

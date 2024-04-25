@@ -1,4 +1,4 @@
-package org.example;
+package org.example.Threads;
 
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
