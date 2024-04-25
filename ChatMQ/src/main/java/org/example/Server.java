@@ -1,4 +1,4 @@
 package org.example;
 
-public class Chat {
+public class Server {
 }
