@@ -1,6 +1,6 @@
-package org.example.CRDTs;
+package org.client.crdts;
 
-import org.example.Rating;
+import org.client.Rating;
 
 import java.util.HashSet;
 

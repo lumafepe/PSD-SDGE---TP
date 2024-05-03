@@ -1,4 +1,4 @@
-package org.example.CRDTs;
+package org.client.crdts;
 
 import java.util.HashMap;
 import java.util.Set;

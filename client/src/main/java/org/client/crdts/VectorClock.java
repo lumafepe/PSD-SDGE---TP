@@ -1,4 +1,4 @@
-package org.example.CRDTs;
+package org.client.crdts;
 
 public class VectorClock {
     public long nodeId;
