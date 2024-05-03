@@ -4,44 +4,48 @@ package protos;
 
 message Message {
   Type type = 1;
-  optional Register register = 2;
-  optional Login login = 3;
-  optional ErrorReply reply = 4;
-  optional AlbumCreate albumCreate = 5;
-  optional AlbumGet albumGet = 6;
+  optional UserData user_data = 2;
+  optional ErrorReply error_message = 4;
+  optional AlbumName album_name = 5;
   optional Albums albums = 7;
   optional Album album = 8;
-  optional NodeInfo nodeInfo = 9;
-  repeated NodeInfo nodesInfo = 10;
+  optional NodeInfo node_info = 9;
+  repeated NodeInfo nodes_infos = 10;
   optional uint64 token = 11;
-  repeated NodeIp nodesIp = 12;
+  repeated NodeIp nodes_ips = 12;
+  optional NewClient new_client = 13;
+  optional bool is_last = 6;
+  optional LeaveData leave_data = 3;
 }
 
+// C2S -> Client to Server
+// S2C -> Server to Client
+
+// Type -> IN Data | Out Data
 enum Type {
-  REGISTER = 0;
-  LOGIN = 1;
-  LOGOUT = 2;
-  SUCESIUM = 3;
-  ERRORREPLY = 4;
-  ALBUMSLIST = 5;
-  ALBUMCREATE = 6;
-  ALBUM = 7;
-  ALBUMS = 8;
-  ALBUMGET = 9;
-  STARTENTRANCE = 10;
-  ENDENTRANCE = 11;
-  NODESINFO = 12;
-  READ = 13;
-  WRITE = 14;
-  NODEIP = 15;
+  SUCESIUM = 3; // S2C -> None
+  ERRORREPLY = 4; // S2C -> error_message
+  ALBUMS = 8; // S2C -> albums
+  REGISTER = 0; // C2S -> user_data | {SUCESIUM | ERRORREPLY}
+  LOGIN = 1; // C2S -> user_data | {SUCESIUM | ERRORREPLY}
+  LOGOUT = 2; // C2S -> None | {SUCESIUM | ERRORREPLY}
+  ALBUMSLIST = 5; // C2S -> None | ALBUMS
+  ALBUMCREATE = 6; // C2S -> album_name | {SUCESIUM | ERRORREPLY}
+  ALBUM = 7; // S2C -> album
+  ALBUMEDIT = 9; // C2S -> album_name | {ALBUM | ERRORREPLY | NEWCLIENT}
+  STARTENTRANCE = 10;  //C2S -> node_info | {ERRORREPLY | nodes}
+  ENDENTRANCE = 11; //C2S -> node_info | {SUCESIUM | ERRORREPLY}
+  NODESINFO = 12; // S2C -> nodes_infos
+  READ = 13; // C2S -> token | { ERRORREPLY | NODEIP }
+  WRITE = 14; // C2S -> token | { ERRORREPLY | NODEIP }
+  NODEIP = 15; // S2C -> nodes_ips
+  NEWCLIENT = 16; // S2C -> new_client
+  ISLASTREPLY = 17; // S2C -> is_last
+  ISLAST = 18; // C2S -> album_name | {ERRORREPLY | ISLASTREPLY}
+  LEAVE = 19; // C2S -> leave_data | {ERRORREPLY | SUCESIUM}
 }
 
-message Register {
-  string username = 1;
-  string password = 2;
-}
-
-message Login {
+message UserData {
   string username = 1;
   string password = 2;
 }
@@ -50,11 +54,7 @@ message ErrorReply {
   string message = 1;
 }
 
-message AlbumCreate {
-  string name = 1;
-}
-
-message AlbumGet {
+message AlbumName {
   string name = 1;
 }
 
@@ -62,10 +62,39 @@ message Albums {
   repeated string names = 1;
 }
 
-message Album {
-  string name = 1;
-  repeated string files = 2;
+
+message Classifications {
+  string username = 1;
+  uint32 value = 2;
 }
+
+message File {
+  string name = 1;
+  uint64 hash = 2;
+  repeated Classifications classifications = 3;  
+}
+
+message Client {
+  string username = 1;
+  string ip = 2;
+  uint32 port = 3;
+}
+
+message NewClient {
+  repeated Client clients = 1;
+  uint32 clock = 2;
+}
+
+message LeaveData {
+  string name = 1;
+  uint32 clock = 2; 
+}
+
+message Album {
+  repeated File files = 1;
+  repeated string users = 2; 
+}
+
 
 message NodeInfo{
   string ip = 1;

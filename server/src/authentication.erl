@@ -11,12 +11,10 @@ authenticate(Socket) ->
             inet:setopts(Socket, [{active, once}]),
             Msg = messages:decode_msg(Bin,'Message'),
             case maps:get(type,Msg) of
-                'REGISTER' -> registerHandler(Socket, maps:get(register,Msg));
-                'LOGIN' -> loginHandler(Socket, maps:get(login,Msg));
-                'STARTENTRANCE' -> startEntranceHandler(Socket, maps:get(nodeInfo,Msg));
-                'ENDENTRANCE' -> endEntranceHandler(Socket, maps:get(nodeInfo,Msg));
-                'READ' -> readHandler(Socket,maps:get(token,Msg));
-                'WRITE' -> writeHandler(Socket,maps:get(token,Msg));
+                'REGISTER' -> registerHandler(Socket, maps:get(user_data,Msg));
+                'LOGIN' -> loginHandler(Socket, maps:get(user_data,Msg));
+                'STARTENTRANCE' -> startEntranceHandler(Socket, maps:get(node_info,Msg));
+                'ENDENTRANCE' -> endEntranceHandler(Socket, maps:get(node_info,Msg));
                 _ ->
                     answer_manager:errorReply(Socket,"Invalid request"),
                     authenticate(Socket)
@@ -86,29 +84,5 @@ endEntranceHandler(Socket, Data)->
         {error, ErrorMsg} -> 
             io:fwrite("Failed Node connect: ~p:~p, ~p.\n", [Ip,Port,ErrorMsg]),
             answer_manager:errorReply(Socket,ErrorMsg),
-            authenticate(Socket)
-end.
-
-readHandler(Socket, Token) ->
-    case dht_manager:read(Token) of
-        {error, ErrorMsg} ->
-            io:fwrite("Failed get read Node: ~p, ~p.\n", [Token,ErrorMsg]),
-            answer_manager:errorReply(Socket,ErrorMsg),
-            authenticate(Socket);
-        {ok, Data} ->
-            io:fwrite("Found read Node for hash: ~p.\n", [Token]),
-            answer_manager:server(Socket,Data),
-            authenticate(Socket)
-end.
-
-writeHandler(Socket, Token) ->
-    case dht_manager:write(Token) of
-        {error, ErrorMsg} ->
-            io:fwrite("Failed get write Node: ~p, ~p.\n", [Token,ErrorMsg]),
-            answer_manager:errorReply(Socket,ErrorMsg),
-            authenticate(Socket);
-        {ok, Data} ->
-            io:fwrite("Found write Node for hash: ~p.\n", [Token]),
-            answer_manager:server(Socket,Data),
             authenticate(Socket)
 end.
