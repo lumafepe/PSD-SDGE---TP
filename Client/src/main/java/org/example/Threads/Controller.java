@@ -1,7 +1,7 @@
 package org.example.Threads;
 
-import client.messages.*;
-import client.operations.*;
+import client.central.*;
+import client.p2p.*;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.example.CBcast;
 import org.example.CRDTs.GOSet;
@@ -83,9 +83,7 @@ public class Controller extends Thread{
                     String rest = msgReceived.substring("/register".length());
                     String[] restSplit = rest.split(" ");
                     String username = restSplit[1];
-                    System.out.println("REGISTER\nUsername: " + username);
                     String password = restSplit[2];
-                    System.out.println("Password: " + password);
 
                     Message reply = send(Message.newBuilder()
                             .setType(Type.REGISTER)
@@ -104,9 +102,7 @@ public class Controller extends Thread{
                     String rest = msgReceived.substring("/login".length());
                     String[] restSplit = rest.split(" ");
                     String username = restSplit[1];
-                    System.out.println("LOGIN\nUsername: " + username);
                     String password = restSplit[2];
-                    System.out.println("Password: " + password);
 
                     Message reply = send(Message.newBuilder()
                             .setType(Type.LOGIN)
@@ -180,53 +176,44 @@ public class Controller extends Thread{
                     String rest = msgReceived.substring("/addFile".length());
                     String[] restSplit = rest.split(" ");
                     String fileName = restSplit[1];
-                    System.out.println("ADD FILE\nFilename: " + fileName);
                     String content = restSplit[2];
-                    System.out.println("Content: " + content);
 
                     Operation o = filesCRDT.addElement("addFile", fileName, bindPort);
-                    Iterable<VectorClock> observed = (List<VectorClock>) o.observed;
-                    Client.OperationMessage.Builder builder = Client.OperationMessage.newBuilder()
-                            .setElement(o.element)
-                            .setOperation(o.operation)
-                            .setVectorClock(Client.VectorClock.newBuilder()
-                                    .setCounter(o.vectorClock.counter)
-                                    .setNodeId(o.vectorClock.nodeId)
-                                    .build());
-
-                    if (observed != null) {
-                        for (VectorClock vectorClock : observed) {
-                            builder = builder.addObserved(Client.VectorClock.newBuilder()
-                                    .setNodeId(vectorClock.nodeId)
-                                    .setCounter(vectorClock.counter)
-                                    .build());
-                        }
-                    }
-
-
-                    Client.OperationMessage om = builder.build();
-                    byte[] msg = om.toByteArray();
-
-                    for (String userIdentity : sessionUsers){
-                        router.sendMore(userIdentity);
-                        router.sendMore("");
-                        router.send(msg, 0);
-                    }
+                    broadcast(router, identity, o);
                 }
                 else if (msgReceived.startsWith("/removeFile")) {
-                    String fileName = msgReceived.substring("/removeFile".length());
-                    System.out.println("File: " + fileName);
+                    String rest = msgReceived.substring("/removeFile".length());
+                    String[] restSplit = rest.split(" ");
+                    String fileName = restSplit[1];
+
+                    Operation o = filesCRDT.removeElement("removeFile", fileName);
+                    broadcast(router, identity, o);
                 }
                 else if (msgReceived.startsWith("/getFiles")) {
-                    System.out.println("Files: " + filesCRDT.elements());
+                    router.sendMore(identity);
+                    router.sendMore("");
+                    router.send(filesCRDT.elements().toString(), 0);
                 }
                 else if (msgReceived.startsWith("/addUser")) {
-                    String userName = msgReceived.substring("/addUser".length());
-                    System.out.println("User: " + userName);
+                    String rest = msgReceived.substring("/addUser".length());
+                    String[] restSplit = rest.split(" ");
+                    String userName = restSplit[1];
+
+                    Operation o = usersCRDT.addElement("addUser", userName, bindPort);
+                    broadcast(router, identity, o);
                 }
                 else if (msgReceived.startsWith("/removeUser")) {
-                    String userName = msgReceived.substring("/removeUser".length());
-                    System.out.println("User: " + userName);
+                    String rest = msgReceived.substring("/removeUser".length());
+                    String[] restSplit = rest.split(" ");
+                    String userName = restSplit[1];
+
+                    Operation o = usersCRDT.removeElement("removeUser", userName);
+                    broadcast(router, identity, o);
+                }
+                else if (msgReceived.startsWith("/getUsers")) {
+                    router.sendMore(identity);
+                    router.sendMore("");
+                    router.send(usersCRDT.elements().toString(), 0);
                 }
                 else if (msgReceived.startsWith("/rate")) {
                     String rest = msgReceived.substring("/rate".length());
@@ -238,11 +225,9 @@ public class Controller extends Thread{
 
                     String pid = String.valueOf(ProcessHandle.current().pid());
                     int intRating = Integer.parseInt(rating);
-                    Operation o = this.fileRatingsCRDT.addRating(new Rating(pid, fileName, intRating));
+                    Operation o = this.fileRatingsCRDT.addRating(fileName, bindPort, Integer.parseInt(rating));
 
-                    //byte[] operationSerialized = o.serialize();
-                    //System.out.println("Serialized data: " + operationSerialized);
-                    //broadcast.send(operationSerialized);
+                    broadcast(router, identity, o);
                 }
                 else if (msgReceived.startsWith("/listRates")) {
                     if (this.fileRatingsCRDT.getRatings().isEmpty()) {
@@ -254,23 +239,33 @@ public class Controller extends Thread{
                 }
                 else {
                     try {
-                        Client.OperationMessage operationReceived = Client.OperationMessage.parseFrom(request);
+                        OperationMessage operationReceived = OperationMessage.parseFrom(request);
                         System.out.println(operationReceived);
 
                         if (operationReceived.getOperation().equals("addFile")){
-                            List<Client.VectorClock> observedList = operationReceived.getObservedList();
-                            Set<VectorClock> observedVectors = new HashSet<>();
-                            for (Client.VectorClock vectorClock : observedList) {
-                                observedVectors.add(new VectorClock(vectorClock.getNodeId(), (int)vectorClock.getCounter()));
-                            }
-                            Operation o = new Operation(operationReceived.getOperation(),
-                                                        operationReceived.getElement(),
-                                    new VectorClock(operationReceived.getVectorClock().getNodeId(),
-                                            operationReceived.getVectorClock().getCounter()),
-                                    observedVectors
-                                    );
-
+                            Operation o = new Operation(operationReceived);
+                            System.out.println("Received Operation from other client: " + o);
                             filesCRDT.applyAddOperation(o);
+                        }
+                        else if (operationReceived.getOperation().equals("removeFile")){
+                            Operation o = new Operation(operationReceived);
+                            System.out.println("Received Operation from other client: " + o);
+                            filesCRDT.applyAddOperation(o);
+                        }
+                        else if (operationReceived.getOperation().equals("addUser")){
+                            Operation o = new Operation(operationReceived);
+                            System.out.println("Received Operation from other client: " + o);
+                            usersCRDT.applyAddOperation(o);
+                        }
+                        else if (operationReceived.getOperation().equals("removeUser")){
+                            Operation o = new Operation(operationReceived);
+                            System.out.println("Received Operation from other client: " + o);
+                            usersCRDT.applyAddOperation(o);
+                        }
+                        else if (operationReceived.getOperation().equals("rate")){
+                            Operation o = new Operation(operationReceived);
+                            System.out.println("Received Operation from other client: " + o);
+                            fileRatingsCRDT.applyAddRatingOperation(o);
                         }
                     } catch (InvalidProtocolBufferException e) {
                         throw new RuntimeException(e);
@@ -279,6 +274,22 @@ public class Controller extends Thread{
 
             }
         }
+    }
+
+    private void broadcast(ZMQ.Socket router, byte[] identity, Operation o) {
+        OperationMessage om = o.getOperationMessage();
+
+        byte[] msg = om.toByteArray();
+
+        for (String userIdentity : sessionUsers){
+            router.sendMore(userIdentity);
+            router.sendMore("");
+            router.send(msg, 0);
+        }
+
+        router.sendMore(identity);
+        router.sendMore("");
+        router.send("SUCCESS", 0);
     }
 
     private Message send(Message msg) {

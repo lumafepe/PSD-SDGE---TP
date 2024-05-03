@@ -3,9 +3,9 @@ package org.example;
 import java.io.Serializable;
 
 public class Rating implements Serializable {
-    String user;
-    String fileName;
-    int rating;
+    public String user;
+    public String fileName;
+    public int rating;
 
     public Rating(String user, String fileName, int rating) {
         this.user = user;

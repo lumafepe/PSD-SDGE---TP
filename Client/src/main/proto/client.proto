@@ -1,12 +1,16 @@
 syntax = "proto3";
 
-package client.operations;
+package client.p2p;
+option java_multiple_files = true;
 
 message OperationMessage {
-  string operation = 1;
-  string element = 2;
-  VectorClock vector_clock = 3;
+  optional string operation = 1;
+  optional string element = 2;
+  optional VectorClock vector_clock = 3;
   repeated VectorClock observed = 4;
+  optional string user = 5;
+  optional string fileName = 6;
+  optional int32 rating = 7;
 }
 
 message VectorClock {

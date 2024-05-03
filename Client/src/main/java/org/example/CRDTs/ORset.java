@@ -44,17 +44,24 @@ public class ORset {
         map.put(addOperation.element, oldValue);
     }
 
-    public Operation removeElement(String element){
-        Operation operation = new Operation("remove", element, null, map.get(element));
+    public Operation removeElement(String operationName, String element){
+        Operation operation = new Operation(operationName, element, null, map.get(element));
         applyRemoveOperation(operation);
         return operation;
     }
 
     public void applyRemoveOperation(Operation removeOperation){
         Set<VectorClock> oldValue = map.get(removeOperation.element);
-        for (Object toRemove : removeOperation.observed)
-            oldValue.remove(toRemove);
+        if (oldValue == null){
+            oldValue = new HashSet<>();
+        }
+        if (removeOperation.observed != null)
+            for (Object toRemove : removeOperation.observed)
+                oldValue.remove(toRemove);
 
         map.put(removeOperation.element, oldValue);
+        if (oldValue.size() == 0){
+            map.remove(removeOperation.element);
+        }
     }
 }
