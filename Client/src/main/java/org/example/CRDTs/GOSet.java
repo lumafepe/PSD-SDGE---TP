@@ -22,7 +22,7 @@ public class GOSet {
     public Operation addRating(Rating rating) {
         this.ratings.add(rating);
 
-        Operation ratingOperation = new Operation("add", rating, null, null);
+        Operation ratingOperation = null; //new Operation("add", rating, null, null);
         return ratingOperation;
     }
 }

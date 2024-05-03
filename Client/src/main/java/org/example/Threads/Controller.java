@@ -1,12 +1,13 @@
 package org.example.Threads;
 
-import client.messages.Register;
-import client.messages.Message;
-import client.messages.Type;
+import client.messages.*;
+import client.operations.*;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.example.CBcast;
 import org.example.CRDTs.GOSet;
 import org.example.CRDTs.ORset;
 import org.example.CRDTs.Operation;
+import org.example.CRDTs.VectorClock;
 import org.example.Rating;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
@@ -19,10 +20,15 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import com.google.protobuf.ByteString;
 
 public class Controller extends Thread{
+    String bindPort;
     GOSet fileRatingsCRDT;
     ORset filesCRDT;
     ORset usersCRDT;
@@ -30,8 +36,10 @@ public class Controller extends Thread{
     Socket centralServer;
     PrintWriter out;
     BufferedReader in;
+    List<String> sessionUsers;
 
-    public Controller() throws IOException {
+    public Controller(String port) throws IOException {
+        this.bindPort = port;
         this.fileRatingsCRDT = new GOSet();
         this.filesCRDT = new ORset();
         this.usersCRDT = new ORset();
@@ -39,14 +47,23 @@ public class Controller extends Thread{
         centralServer = new Socket("localhost", 4321);
         out = new PrintWriter(centralServer.getOutputStream(), true);
         in = new BufferedReader(new InputStreamReader(centralServer.getInputStream()));
+        sessionUsers = new ArrayList<>();
+        sessionUsers.add("6000");
+        sessionUsers.add("6001");
+        sessionUsers.remove(bindPort);
     }
 
     // Sockets Sub, Pub
     public void run() {
-        System.out.println("Controller started working");
+        System.out.println("Controller started working at port: " + bindPort);
         try (ZContext context = new ZContext();
              ZMQ.Socket router = context.createSocket(SocketType.ROUTER)) {
-            router.bind("tcp://localhost:5001");
+            router.bind("tcp://localhost:" + bindPort);
+            router.setIdentity(bindPort.getBytes());
+
+            for (String sessionUser : sessionUsers){
+                router.connect("tcp://localhost:" + sessionUser);
+            }
 
             while (true) {
                 byte[] identity = router.recv(0);
@@ -63,27 +80,145 @@ public class Controller extends Thread{
                     continue;
                 }
                 else if (msgReceived.startsWith("/register")){
-                    Register registerRequest = Register.newBuilder()
-                            .setUsername("miguel")
-                            .setPassword("miguel")
-                            .build();
+                    String rest = msgReceived.substring("/register".length());
+                    String[] restSplit = rest.split(" ");
+                    String username = restSplit[1];
+                    System.out.println("REGISTER\nUsername: " + username);
+                    String password = restSplit[2];
+                    System.out.println("Password: " + password);
 
                     Message reply = send(Message.newBuilder()
                             .setType(Type.REGISTER)
                             .setRegister(Register.newBuilder()
-                                    .setUsername("miguel")
-                                    .setPassword("miguel")
+                                    .setUsername(username)
+                                    .setPassword(password)
                                     .build())
                             .build());
 
+                    router.sendMore(identity);
+                    router.sendMore("");
+                    router.send(reply.toString(), 0);
+
+                }
+                else if (msgReceived.startsWith("/login")){
+                    String rest = msgReceived.substring("/login".length());
+                    String[] restSplit = rest.split(" ");
+                    String username = restSplit[1];
+                    System.out.println("LOGIN\nUsername: " + username);
+                    String password = restSplit[2];
+                    System.out.println("Password: " + password);
+
+                    Message reply = send(Message.newBuilder()
+                            .setType(Type.LOGIN)
+                            .setLogin(Login.newBuilder()
+                                    .setUsername(username)
+                                    .setPassword(password)
+                                    .build())
+                            .build());
+
+                    router.sendMore(identity);
+                    router.sendMore("");
+                    router.send(reply.toString(), 0);
+
+                }
+                else if (msgReceived.startsWith("/logout")){
+                    Message reply = send(Message.newBuilder()
+                            .setType(Type.LOGOUT)
+                            .build());
+
+                    router.sendMore(identity);
+                    router.sendMore("");
+                    router.send(reply.toString(), 0);
+
+                }
+                else if (msgReceived.startsWith("/listAlbums")){
+
+                    Message reply = send(Message.newBuilder()
+                            .setType(Type.ALBUMSLIST)
+                            .build());
+
+                    router.sendMore(identity);
+                    router.sendMore("");
+                    router.send(reply.toString(), 0);
+
+                }
+                else if (msgReceived.startsWith("/createAlbum")){
+                    String rest = msgReceived.substring("/register".length());
+                    String[] restSplit = rest.split(" ");
+                    String albumName = restSplit[1];
+
+                    Message reply = send(Message.newBuilder()
+                            .setType(Type.ALBUMCREATE)
+                            .setAlbumCreate(AlbumCreate.newBuilder()
+                                    .setName(albumName)
+                                    .build())
+                            .build());
+
+                    router.sendMore(identity);
+                    router.sendMore("");
+                    router.send(reply.toString(), 0);
+
+                }
+                else if (msgReceived.startsWith("/getAlbum")){
+                    String rest = msgReceived.substring("/register".length());
+                    String[] restSplit = rest.split(" ");
+                    String albumName = restSplit[1];
+
+                    Message reply = send(Message.newBuilder()
+                            .setType(Type.ALBUMGET)
+                            .setAlbumGet(AlbumGet.newBuilder()
+                                    .setName(albumName)
+                                    .build())
+                            .build());
+
+                    router.sendMore(identity);
+                    router.sendMore("");
+                    router.send(reply.toString(), 0);
+
                 }
                 else if (msgReceived.startsWith("/addFile")) {
-                    String fileName = msgReceived.substring("/addFile".length());
-                    System.out.println("File: " + fileName);
+                    String rest = msgReceived.substring("/addFile".length());
+                    String[] restSplit = rest.split(" ");
+                    String fileName = restSplit[1];
+                    System.out.println("ADD FILE\nFilename: " + fileName);
+                    String content = restSplit[2];
+                    System.out.println("Content: " + content);
+
+                    Operation o = filesCRDT.addElement("addFile", fileName, bindPort);
+                    Iterable<VectorClock> observed = (List<VectorClock>) o.observed;
+                    Client.OperationMessage.Builder builder = Client.OperationMessage.newBuilder()
+                            .setElement(o.element)
+                            .setOperation(o.operation)
+                            .setVectorClock(Client.VectorClock.newBuilder()
+                                    .setCounter(o.vectorClock.counter)
+                                    .setNodeId(o.vectorClock.nodeId)
+                                    .build());
+
+                    if (observed != null) {
+                        for (VectorClock vectorClock : observed) {
+                            builder = builder.addObserved(Client.VectorClock.newBuilder()
+                                    .setNodeId(vectorClock.nodeId)
+                                    .setCounter(vectorClock.counter)
+                                    .build());
+                        }
+                    }
+
+
+                    Client.OperationMessage om = builder.build();
+                    byte[] msg = om.toByteArray();
+
+                    for (String userIdentity : sessionUsers){
+                        router.sendMore(userIdentity);
+                        router.sendMore("");
+                        router.send(msg, 0);
+                    }
                 }
                 else if (msgReceived.startsWith("/removeFile")) {
                     String fileName = msgReceived.substring("/removeFile".length());
                     System.out.println("File: " + fileName);
+                }
+                else if (msgReceived.startsWith("/getFiles")) {
+                    System.out.println("Files: " + filesCRDT.elements());
                 }
                 else if (msgReceived.startsWith("/addUser")) {
                     String userName = msgReceived.substring("/addUser".length());
@@ -105,8 +240,8 @@ public class Controller extends Thread{
                     int intRating = Integer.parseInt(rating);
                     Operation o = this.fileRatingsCRDT.addRating(new Rating(pid, fileName, intRating));
 
-                    byte[] operationSerialized = o.serialize();
-                    System.out.println("Serialized data: " + operationSerialized);
+                    //byte[] operationSerialized = o.serialize();
+                    //System.out.println("Serialized data: " + operationSerialized);
                     //broadcast.send(operationSerialized);
                 }
                 else if (msgReceived.startsWith("/listRates")) {
@@ -118,8 +253,28 @@ public class Controller extends Thread{
                     }
                 }
                 else {
-                    Operation o = Operation.deserialize(msgReceived.getBytes());
-                    System.out.println("Received operation: " + o);
+                    try {
+                        Client.OperationMessage operationReceived = Client.OperationMessage.parseFrom(request);
+                        System.out.println(operationReceived);
+
+                        if (operationReceived.getOperation().equals("addFile")){
+                            List<Client.VectorClock> observedList = operationReceived.getObservedList();
+                            Set<VectorClock> observedVectors = new HashSet<>();
+                            for (Client.VectorClock vectorClock : observedList) {
+                                observedVectors.add(new VectorClock(vectorClock.getNodeId(), (int)vectorClock.getCounter()));
+                            }
+                            Operation o = new Operation(operationReceived.getOperation(),
+                                                        operationReceived.getElement(),
+                                    new VectorClock(operationReceived.getVectorClock().getNodeId(),
+                                            operationReceived.getVectorClock().getCounter()),
+                                    observedVectors
+                                    );
+
+                            filesCRDT.applyAddOperation(o);
+                        }
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
 
             }

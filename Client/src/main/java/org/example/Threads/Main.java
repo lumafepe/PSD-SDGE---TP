@@ -11,7 +11,7 @@ public class Main {
     public static void main(String[] args) {
         Controller c = null;
         try {
-            c = new Controller();
+            c = new Controller(args[0]);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -20,7 +20,7 @@ public class Main {
         Scanner sc = new Scanner(System.in);
         try (ZContext context = new ZContext();
              ZMQ.Socket sendCommand = context.createSocket(SocketType.REQ)) {
-            sendCommand.connect("tcp://localhost:5001");
+            sendCommand.connect("tcp://localhost:" + args[0]);
             while (sc.hasNextLine()) {
                 String line = sc.nextLine();
                 System.out.println("Send line to controller: " + line);

@@ -1,11 +1,13 @@
 package org.example.CRDTs;
 
-public class VectorClock {
-    public long nodeId;
+import java.io.Serializable;
+
+public class VectorClock implements Serializable {
+    public String nodeId;
     public int counter;
 
-    public VectorClock(long node_id, int counter) {
-        this.nodeId = node_id;
+    public VectorClock(String nodeId, int counter) {
+        this.nodeId = nodeId;
         this.counter = counter;
     }
 }

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package client.operations;
+
+message OperationMessage {
+  string operation = 1;
+  string element = 2;
+  VectorClock vector_clock = 3;
+  repeated VectorClock observed = 4;
+}
+
+message VectorClock {
+  // Define fields for VectorClock if needed
+  string nodeId = 1;
+  int32 counter = 2;
+}
