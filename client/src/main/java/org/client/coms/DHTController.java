@@ -6,6 +6,8 @@ import io.grpc.ManagedChannelBuilder;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -23,18 +25,19 @@ public class DHTController {
         this.SERVER_PORT = serverPort;
     }
 
-    public static DHTController at(String serverAddress, int serverPort) {
+    @Contract(value = "_, _ -> new", pure = true)
+    public static @NotNull DHTController at(String serverAddress, int serverPort) {
         return new DHTController(serverAddress, serverPort);
     }
 
-    private static Iterable<WriteRequest> readFile(String filepath, int chunkSize) throws IOException {
+    private static @NotNull Iterable<WriteRequest> readFile(String filepath) throws IOException {
 
         String fileHash = Hasher.digest(filepath);
         List<WriteRequest> writeRequests = new ArrayList<>();
 
         try (FileInputStream inputStream = new FileInputStream(filepath)) {
 
-            byte[] buffer = new byte[chunkSize];
+            byte[] buffer = new byte[Hasher.BLOCK_SIZE];
 
             int bytesRead;
             long offset = 0;
@@ -55,10 +58,6 @@ public class DHTController {
         return writeRequests;
     }
 
-    private String hashFile(String filepath) throws RuntimeException {
-        return Hasher.digest(filepath);
-    }
-
     public Status setFile(String filepath) throws IOException {
 
         var channel = ManagedChannelBuilder
@@ -68,7 +67,7 @@ public class DHTController {
 
         var stub = Rx3DHTServiceGrpc.newRxStub(channel);
 
-        Status status = stub.write(Flowable.fromIterable(readFile(filepath, Hasher.BLOCK_SIZE)))
+        Status status = stub.write(Flowable.fromIterable(readFile(filepath)))
                 .map(WriteResponse::getSuccess)
                 .blockingGet();
 
