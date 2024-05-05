@@ -1,27 +1,30 @@
 package org.client;
 
-import client.p2p.OperationMessage;
+import org.client.crdts.Album;
 import org.client.crdts.base.Operation;
 import org.client.utils.VectorClock;
 import org.zeromq.ZMQ;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
 public class Broadcaster {
 
-    private List<String> network;
-    private ZMQ.Socket router;
+    private final List<String> network;
+    private final ZMQ.Socket router;
 
     private final VectorClock version;
     private final int self;
 
-    private final Queue<Operation> pending;
+    private final Queue<BroadcastMessage> pending;
+    private final Album crdts = Album.getInstance();
 
-    public Broadcaster(List<String> network, int self, int selfValue) {
+    public Broadcaster(List<String> network, int self, int selfValue, ZMQ.Socket router) {
         this.network = network;
         this.self = self;
+        this.router = router;
 
         this.version = new VectorClock(network.size(), self);
         for (int i = 0; i < selfValue; i++) {
@@ -31,45 +34,43 @@ public class Broadcaster {
         this.pending = new LinkedList<>();
     }
 
-    private boolean canDeliver(Operation op) {
-        return false;
+    private boolean canDeliver(BroadcastMessage message) {
+        return !this.version.happensBefore(message.version()); // todo: check '!'
     }
 
     private void loopPending() {
 
-        for (Operation op : this.pending) {
-            if (this.canDeliver(op)) {
-                this.pending.remove(op);
-
-                // todo: do stuff with op
-                this.version.increment(0); // todo: get index from message
+        for (BroadcastMessage m : this.pending) {
+            if (this.canDeliver(m)) {
+                this.pending.remove(m); // todo: implement equals in VectorClock & BroadcastMessage ?
+                crdts.handleOperation(m.operation());
+                this.version.increment(m.index());
             }
         }
     }
-
-    private void deliver(Operation op) {
-
-        this.version.increment(0); // todo: get index from message
-        // todo: do stuff with op
+    private void deliver(BroadcastMessage message) {
+        this.version.increment(message.index());
+        crdts.handleOperation(message.operation());
         this.loopPending();
     }
 
-    public void broadcast(Operation op) {
+    public void broadcast(Operation op) throws IOException {
+
+        BroadcastMessage message = new BroadcastMessage(this.self, this.version, op);
         this.version.increment(this.self);
 
-        OperationMessage message = op.getOperationMessage();
         for (String identity : this.network) {
             router.sendMore(identity);
             router.sendMore("");
-            router.send(message.toByteArray(), 0);
+            router.send(message.asBytes(), 0);
         }
     }
 
-    public void receive(Operation op) {
-        if (!canDeliver(op)) {
-            this.pending.add(op);
+    public void receive(BroadcastMessage message) {
+        if (!canDeliver(message)) {
+            this.pending.add(message);
             return;
         }
-        this.deliver(op);
+        this.deliver(message);
     }
 }
