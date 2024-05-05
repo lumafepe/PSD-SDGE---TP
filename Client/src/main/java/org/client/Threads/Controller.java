@@ -38,7 +38,7 @@ public class Controller extends Thread{
         this.fileRatingsCRDT = new GOSet();
         this.filesCRDT = new ORset();
         this.usersCRDT = new ORset();
-        this.causalBroadcast = new Broadcaster();
+//        this.causalBroadcast = new Broadcaster();
         centralServer = new Socket("localhost", 4321);
         out = new PrintWriter(centralServer.getOutputStream(), true);
         in = new BufferedReader(new InputStreamReader(centralServer.getInputStream()));

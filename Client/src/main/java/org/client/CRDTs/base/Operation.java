@@ -6,7 +6,7 @@ import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Operation implements Serializable{
+public class Operation implements Serializable {
     public String operation;
     public String element;
     public VersionVector versionVector;
