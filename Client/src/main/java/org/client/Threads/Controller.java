@@ -1,12 +1,13 @@
-package org.client.threads;
+package org.client.Threads;
 
 import client.central.*;
 import client.p2p.*;
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.client.BroadcastMessage;
 import org.client.Broadcaster;
-import org.client.crdts.GOSet;
-import org.client.crdts.ORset;
-import org.client.crdts.base.Operation;
+import org.client.CRDTs.base.Operation;
+import org.client.CRDTs.GOSet;
+import org.client.CRDTs.ORset;
 import org.client.Rating;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
@@ -32,242 +33,253 @@ public class Controller extends Thread{
     PrintWriter out;
     BufferedReader in;
     List<String> sessionUsers;
+    ZMQ.Socket router;
 
     public Controller(String port) throws IOException {
         this.bindPort = port;
         this.fileRatingsCRDT = new GOSet();
         this.filesCRDT = new ORset();
         this.usersCRDT = new ORset();
-//        this.causalBroadcast = new Broadcaster();
+        ZContext context = new ZContext();
+        this.router = context.createSocket(SocketType.ROUTER);
+        router.bind("tcp://localhost:" + bindPort);
+        router.setIdentity(bindPort.getBytes());
+
+        this.sessionUsers = new ArrayList<>();
+        this.sessionUsers.add("6000");
+        this.sessionUsers.add("6001");
+        this.sessionUsers.remove(bindPort);
+
+        this.causalBroadcast = new Broadcaster(sessionUsers, Integer.parseInt(bindPort) % 6000, 0, this.router);
         centralServer = new Socket("localhost", 4321);
         out = new PrintWriter(centralServer.getOutputStream(), true);
         in = new BufferedReader(new InputStreamReader(centralServer.getInputStream()));
-        sessionUsers = new ArrayList<>();
-        sessionUsers.add("6000");
-        sessionUsers.add("6001");
-        sessionUsers.remove(bindPort);
+
     }
 
     // Sockets Sub, Pub
     public void run() {
         System.out.println("Controller started working at port: " + bindPort);
-        try (ZContext context = new ZContext();
-            ZMQ.Socket router = context.createSocket(SocketType.ROUTER)) {
-            router.bind("tcp://localhost:" + bindPort);
-            router.setIdentity(bindPort.getBytes());
+        for (String sessionUser : sessionUsers){
+            router.connect("tcp://localhost:" + sessionUser);
+        }
 
-            for (String sessionUser : sessionUsers){
-                router.connect("tcp://localhost:" + sessionUser);
+        while (true) {
+            byte[] identity = router.recv(0);
+
+            // Discard empty delimiter frame
+            router.recv(0);
+
+            // Receive request message
+            byte[] request = router.recv(0);
+            String msgReceived = new String(request);
+            System.out.println("Received request from client " + new String(identity) + ": " + new String(request));
+
+            if (msgReceived.startsWith("/chat")) {
+                String message = msgReceived.substring("/chat ".length());
+                try {
+                    causalBroadcast.broadcast(new Operation("chat", message));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
+            else if (msgReceived.startsWith("/register")){
+                String rest = msgReceived.substring("/register".length());
+                String[] restSplit = rest.split(" ");
+                String username = restSplit[1];
+                String password = restSplit[2];
 
-            while (true) {
-                byte[] identity = router.recv(0);
+                Message reply = send(Message.newBuilder()
+                        .setType(Type.REGISTER)
+                        .setRegister(Register.newBuilder()
+                                .setUsername(username)
+                                .setPassword(password)
+                                .build())
+                        .build());
 
-                // Discard empty delimiter frame
-                router.recv(0);
-
-                // Receive request message
-                byte[] request = router.recv(0);
-                String msgReceived = new String(request);
-                System.out.println("Received request from client " + new String(identity) + ": " + new String(request));
-
-                if (msgReceived.startsWith("/chat")) {
-                    continue;
-                }
-                else if (msgReceived.startsWith("/register")){
-                    String rest = msgReceived.substring("/register".length());
-                    String[] restSplit = rest.split(" ");
-                    String username = restSplit[1];
-                    String password = restSplit[2];
-
-                    Message reply = send(Message.newBuilder()
-                            .setType(Type.REGISTER)
-                            .setRegister(Register.newBuilder()
-                                    .setUsername(username)
-                                    .setPassword(password)
-                                    .build())
-                            .build());
-
-                    router.sendMore(identity);
-                    router.sendMore("");
-                    router.send(reply.toString(), 0);
-
-                }
-                else if (msgReceived.startsWith("/login")){
-                    String rest = msgReceived.substring("/login".length());
-                    String[] restSplit = rest.split(" ");
-                    String username = restSplit[1];
-                    String password = restSplit[2];
-
-                    Message reply = send(Message.newBuilder()
-                            .setType(Type.LOGIN)
-                            .setLogin(Login.newBuilder()
-                                    .setUsername(username)
-                                    .setPassword(password)
-                                    .build())
-                            .build());
-
-                    router.sendMore(identity);
-                    router.sendMore("");
-                    router.send(reply.toString(), 0);
-
-                }
-                else if (msgReceived.startsWith("/logout")){
-                    Message reply = send(Message.newBuilder()
-                            .setType(Type.LOGOUT)
-                            .build());
-
-                    router.sendMore(identity);
-                    router.sendMore("");
-                    router.send(reply.toString(), 0);
-
-                }
-                else if (msgReceived.startsWith("/listAlbums")){
-
-                    Message reply = send(Message.newBuilder()
-                            .setType(Type.ALBUMSLIST)
-                            .build());
-
-                    router.sendMore(identity);
-                    router.sendMore("");
-                    router.send(reply.toString(), 0);
-
-                }
-                else if (msgReceived.startsWith("/createAlbum")){
-                    String rest = msgReceived.substring("/register".length());
-                    String[] restSplit = rest.split(" ");
-                    String albumName = restSplit[1];
-
-                    Message reply = send(Message.newBuilder()
-                            .setType(Type.ALBUMCREATE)
-                            .setAlbumCreate(AlbumCreate.newBuilder()
-                                    .setName(albumName)
-                                    .build())
-                            .build());
-
-                    router.sendMore(identity);
-                    router.sendMore("");
-                    router.send(reply.toString(), 0);
-
-                }
-                else if (msgReceived.startsWith("/getAlbum")){
-                    String rest = msgReceived.substring("/register".length());
-                    String[] restSplit = rest.split(" ");
-                    String albumName = restSplit[1];
-
-                    Message reply = send(Message.newBuilder()
-                            .setType(Type.ALBUMGET)
-                            .setAlbumGet(AlbumGet.newBuilder()
-                                    .setName(albumName)
-                                    .build())
-                            .build());
-
-                    router.sendMore(identity);
-                    router.sendMore("");
-                    router.send(reply.toString(), 0);
-
-                }
-                else if (msgReceived.startsWith("/addFile")) {
-                    String rest = msgReceived.substring("/addFile".length());
-                    String[] restSplit = rest.split(" ");
-                    String fileName = restSplit[1];
-                    String content = restSplit[2];
-
-                    Operation o = filesCRDT.addElement("addFile", fileName, bindPort);
-                    broadcast(router, identity, o);
-                }
-                else if (msgReceived.startsWith("/removeFile")) {
-                    String rest = msgReceived.substring("/removeFile".length());
-                    String[] restSplit = rest.split(" ");
-                    String fileName = restSplit[1];
-
-                    Operation o = filesCRDT.removeElement("removeFile", fileName);
-                    broadcast(router, identity, o);
-                }
-                else if (msgReceived.startsWith("/getFiles")) {
-                    router.sendMore(identity);
-                    router.sendMore("");
-                    router.send(filesCRDT.elements().toString(), 0);
-                }
-                else if (msgReceived.startsWith("/addUser")) {
-                    String rest = msgReceived.substring("/addUser".length());
-                    String[] restSplit = rest.split(" ");
-                    String userName = restSplit[1];
-
-                    Operation o = usersCRDT.addElement("addUser", userName, bindPort);
-                    broadcast(router, identity, o);
-                }
-                else if (msgReceived.startsWith("/removeUser")) {
-                    String rest = msgReceived.substring("/removeUser".length());
-                    String[] restSplit = rest.split(" ");
-                    String userName = restSplit[1];
-
-                    Operation o = usersCRDT.removeElement("removeUser", userName);
-                    broadcast(router, identity, o);
-                }
-                else if (msgReceived.startsWith("/getUsers")) {
-                    router.sendMore(identity);
-                    router.sendMore("");
-                    router.send(usersCRDT.elements().toString(), 0);
-                }
-                else if (msgReceived.startsWith("/rate")) {
-                    String rest = msgReceived.substring("/rate".length());
-                    String[] restSplit = rest.split(" ");
-                    String fileName = restSplit[1];
-                    System.out.println("File: " + fileName);
-                    String rating = restSplit[2];
-                    System.out.println("Rating: " + rating);
-
-                    String pid = String.valueOf(ProcessHandle.current().pid());
-                    int intRating = Integer.parseInt(rating);
-                    Operation o = this.fileRatingsCRDT.addRating(fileName, bindPort, Integer.parseInt(rating));
-
-                    broadcast(router, identity, o);
-                }
-                else if (msgReceived.startsWith("/listRates")) {
-                    if (this.fileRatingsCRDT.getRatings().isEmpty()) {
-                        System.out.println("No ratings found");
-                    }
-                    for (Rating r : this.fileRatingsCRDT.getRatings()) {
-                        System.out.println(r);
-                    }
-                }
-                else {
-                    try {
-                        OperationMessage operationReceived = OperationMessage.parseFrom(request);
-                        System.out.println(operationReceived);
-
-                        if (operationReceived.getOperation().equals("addFile")){
-                            Operation o = new Operation(operationReceived);
-                            System.out.println("Received Operation from other client: " + o);
-                            filesCRDT.applyAddOperation(o);
-                        }
-                        else if (operationReceived.getOperation().equals("removeFile")){
-                            Operation o = new Operation(operationReceived);
-                            System.out.println("Received Operation from other client: " + o);
-                            filesCRDT.applyAddOperation(o);
-                        }
-                        else if (operationReceived.getOperation().equals("addUser")){
-                            Operation o = new Operation(operationReceived);
-                            System.out.println("Received Operation from other client: " + o);
-                            usersCRDT.applyAddOperation(o);
-                        }
-                        else if (operationReceived.getOperation().equals("removeUser")){
-                            Operation o = new Operation(operationReceived);
-                            System.out.println("Received Operation from other client: " + o);
-                            usersCRDT.applyAddOperation(o);
-                        }
-                        else if (operationReceived.getOperation().equals("rate")){
-                            Operation o = new Operation(operationReceived);
-                            System.out.println("Received Operation from other client: " + o);
-                            fileRatingsCRDT.applyAddRatingOperation(o);
-                        }
-                    } catch (InvalidProtocolBufferException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
+                router.sendMore(identity);
+                router.sendMore("");
+                router.send(reply.toString(), 0);
 
             }
+            else if (msgReceived.startsWith("/login")){
+                String rest = msgReceived.substring("/login".length());
+                String[] restSplit = rest.split(" ");
+                String username = restSplit[1];
+                String password = restSplit[2];
+
+                Message reply = send(Message.newBuilder()
+                        .setType(Type.LOGIN)
+                        .setLogin(Login.newBuilder()
+                                .setUsername(username)
+                                .setPassword(password)
+                                .build())
+                        .build());
+
+                router.sendMore(identity);
+                router.sendMore("");
+                router.send(reply.toString(), 0);
+
+            }
+            else if (msgReceived.startsWith("/logout")){
+                Message reply = send(Message.newBuilder()
+                        .setType(Type.LOGOUT)
+                        .build());
+
+                router.sendMore(identity);
+                router.sendMore("");
+                router.send(reply.toString(), 0);
+
+            }
+            else if (msgReceived.startsWith("/listAlbums")){
+
+                Message reply = send(Message.newBuilder()
+                        .setType(Type.ALBUMSLIST)
+                        .build());
+
+                router.sendMore(identity);
+                router.sendMore("");
+                router.send(reply.toString(), 0);
+
+            }
+            else if (msgReceived.startsWith("/createAlbum")){
+                String rest = msgReceived.substring("/register".length());
+                String[] restSplit = rest.split(" ");
+                String albumName = restSplit[1];
+
+                Message reply = send(Message.newBuilder()
+                        .setType(Type.ALBUMCREATE)
+                        .setAlbumCreate(AlbumCreate.newBuilder()
+                                .setName(albumName)
+                                .build())
+                        .build());
+
+                router.sendMore(identity);
+                router.sendMore("");
+                router.send(reply.toString(), 0);
+
+            }
+            else if (msgReceived.startsWith("/getAlbum")){
+                String rest = msgReceived.substring("/register".length());
+                String[] restSplit = rest.split(" ");
+                String albumName = restSplit[1];
+
+                Message reply = send(Message.newBuilder()
+                        .setType(Type.ALBUMGET)
+                        .setAlbumGet(AlbumGet.newBuilder()
+                                .setName(albumName)
+                                .build())
+                        .build());
+
+                router.sendMore(identity);
+                router.sendMore("");
+                router.send(reply.toString(), 0);
+
+            }
+            else if (msgReceived.startsWith("/addFile")) {
+                String rest = msgReceived.substring("/addFile".length());
+                String[] restSplit = rest.split(" ");
+                String fileName = restSplit[1];
+                String content = restSplit[2];
+
+                Operation o = filesCRDT.addElement("addFile", fileName, bindPort);
+                broadcast(router, identity, o);
+            }
+            else if (msgReceived.startsWith("/removeFile")) {
+                String rest = msgReceived.substring("/removeFile".length());
+                String[] restSplit = rest.split(" ");
+                String fileName = restSplit[1];
+
+                Operation o = filesCRDT.removeElement("removeFile", fileName);
+                broadcast(router, identity, o);
+            }
+            else if (msgReceived.startsWith("/getFiles")) {
+                router.sendMore(identity);
+                router.sendMore("");
+                router.send(filesCRDT.elements().toString(), 0);
+            }
+            else if (msgReceived.startsWith("/addUser")) {
+                String rest = msgReceived.substring("/addUser".length());
+                String[] restSplit = rest.split(" ");
+                String userName = restSplit[1];
+
+                Operation o = usersCRDT.addElement("addUser", userName, bindPort);
+                broadcast(router, identity, o);
+            }
+            else if (msgReceived.startsWith("/removeUser")) {
+                String rest = msgReceived.substring("/removeUser".length());
+                String[] restSplit = rest.split(" ");
+                String userName = restSplit[1];
+
+                Operation o = usersCRDT.removeElement("removeUser", userName);
+                broadcast(router, identity, o);
+            }
+            else if (msgReceived.startsWith("/getUsers")) {
+                router.sendMore(identity);
+                router.sendMore("");
+                router.send(usersCRDT.elements().toString(), 0);
+            }
+            else if (msgReceived.startsWith("/rate")) {
+                String rest = msgReceived.substring("/rate".length());
+                String[] restSplit = rest.split(" ");
+                String fileName = restSplit[1];
+                System.out.println("File: " + fileName);
+                String rating = restSplit[2];
+                System.out.println("Rating: " + rating);
+
+                String pid = String.valueOf(ProcessHandle.current().pid());
+                int intRating = Integer.parseInt(rating);
+                Operation o = this.fileRatingsCRDT.addRating(fileName, bindPort, Integer.parseInt(rating));
+
+                broadcast(router, identity, o);
+            }
+            else if (msgReceived.startsWith("/listRates")) {
+                if (this.fileRatingsCRDT.getRatings().isEmpty()) {
+                    System.out.println("No ratings found");
+                }
+                for (Rating r : this.fileRatingsCRDT.getRatings()) {
+                    System.out.println(r);
+                }
+            }
+            else {
+                BroadcastMessage messageReceived = null;
+                try {
+                    messageReceived = BroadcastMessage.fromBytes(request);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+                causalBroadcast.receive(messageReceived);
+                //OperationMessage operationReceived = OperationMessage.parseFrom(request);
+                //System.out.println(operationReceived);
+                /*Operation o = messageReceived.operation();
+
+                if (o.operation.equals("addFile")){
+                    System.out.println("Received Operation from other client: " + o);
+                    filesCRDT.applyAddOperation(o);
+                }
+                else if (o.operation.equals("removeFile")){
+                    System.out.println("Received Operation from other client: " + o);
+                    filesCRDT.applyAddOperation(o);
+                }
+                else if (o.operation.equals("addUser")){
+                    System.out.println("Received Operation from other client: " + o);
+                    usersCRDT.applyAddOperation(o);
+                }
+                else if (o.operation.equals("removeUser")){
+                    System.out.println("Received Operation from other client: " + o);
+                    usersCRDT.applyAddOperation(o);
+                }
+                else if (o.operation.equals("rate")){
+                    System.out.println("Received Operation from other client: " + o);
+                    fileRatingsCRDT.applyAddRatingOperation(o);
+                }
+                else if (o.operation.equals("chat")){
+                    System.out.println("Received Operation from other client: " + o);
+                }*/
+            }
+
         }
     }
 

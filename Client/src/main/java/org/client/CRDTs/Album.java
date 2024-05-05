@@ -1,8 +1,8 @@
-package org.client.crdts;
+package org.client.CRDTs;
 
 import client.p2p.OperationMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.client.crdts.base.Operation;
+import org.client.CRDTs.base.Operation;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +43,10 @@ public class Album {
 
         operationHandlers.put("rate", (o) -> {
             fileRatingsCRDT.applyAddRatingOperation(o);
+        });
+
+        operationHandlers.put("chat", (o) -> {
+            System.out.println("New message: " + o.element);
         });
     }
 

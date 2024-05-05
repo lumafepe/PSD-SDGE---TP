@@ -1,7 +1,7 @@
-package org.client.crdts;
+package org.client.CRDTs;
 
 import org.client.Rating;
-import org.client.crdts.base.Operation;
+import org.client.CRDTs.base.Operation;
 
 import java.util.HashSet;
 

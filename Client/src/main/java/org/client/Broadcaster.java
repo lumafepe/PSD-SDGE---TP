@@ -1,7 +1,7 @@
 package org.client;
 
-import org.client.crdts.Album;
-import org.client.crdts.base.Operation;
+import org.client.CRDTs.Album;
+import org.client.CRDTs.base.Operation;
 import org.client.utils.VectorClock;
 import org.zeromq.ZMQ;
 
@@ -26,7 +26,7 @@ public class Broadcaster {
         this.self = self;
         this.router = router;
 
-        this.version = new VectorClock(network.size(), self);
+        this.version = new VectorClock(network.size() + 1, self);
         for (int i = 0; i < selfValue; i++) {
             this.version.increment(self);
         }
@@ -35,7 +35,7 @@ public class Broadcaster {
     }
 
     private boolean canDeliver(BroadcastMessage message) {
-        return !this.version.happensBefore(message.version()); // todo: check '!'
+        return this.version.happensBefore(message.version()); // todo: check '!'
     }
 
     private void loopPending() {

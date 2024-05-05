@@ -1,4 +1,4 @@
-package org.client.crdts.base;
+package org.client.CRDTs.base;
 
 import client.p2p.OperationMessage;
 
@@ -16,6 +16,7 @@ public class Operation implements Serializable {
     public String fileName;
     public int rating;
 
+    // For Orset
     public Operation(String operation, String element, VersionVector versionVector, Set<VersionVector> observed) {
         this.operation = operation;
         this.element = element;
@@ -23,11 +24,18 @@ public class Operation implements Serializable {
         this.observed = observed;
     }
 
+    // For ratings
     public Operation(String operation, String user, String fileName, int rating) {
         this.operation = operation;
         this.user = user;
         this.fileName = fileName;
         this.rating = rating;
+    }
+
+    // For chat
+    public Operation(String operation, String message) {
+        this.operation = operation;
+        this.element = message;
     }
 
     public Operation(OperationMessage om) {

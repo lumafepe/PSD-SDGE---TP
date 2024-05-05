@@ -1,5 +1,6 @@
 package org.client.threads;
 
+import org.client.Threads.Controller;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
