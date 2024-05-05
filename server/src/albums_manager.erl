@@ -43,7 +43,7 @@ getOnline(Users) ->
             case State of
                 false ->
                     false;
-                {_,_} ->
+                _ ->
                     true
             end
         end, Status).
@@ -71,8 +71,8 @@ loop(Albums,AccessesByPerson) ->
             case maps:find(Name,Albums) of 
                 error ->
                     From ! {?MODULE, ok},
-                    {ok, _CurrSet} = maps:get(Username,AccessesByPerson),
-                    _AccessesByPerson = maps:update(Username,sets:put(Name,_CurrSet),AccessesByPerson),
+                    {ok, _CurrSet} = maps:find(Username,AccessesByPerson),
+                    _AccessesByPerson = maps:update(Username,sets:add_element(Name,_CurrSet),AccessesByPerson),
                     PID = spawn(fun() -> album_manager:start() end),
                     _Albums = maps:put(Name,{PID,false,#{Username=>false}},Albums),
                     loop(_Albums,_AccessesByPerson);
@@ -86,7 +86,7 @@ loop(Albums,AccessesByPerson) ->
                 error ->
                     From ! {?MODULE, {error, "Album doesn't exists"}},
                     loop(Albums,AccessesByPerson);
-                {PID,InUse,Users} ->
+                {ok,{PID,InUse,Users}} ->
                     {ok,PermissionSet} = maps:find(Username,AccessesByPerson),
                     HasPerms = sets:is_element(Name,PermissionSet),
                     if
@@ -94,7 +94,7 @@ loop(Albums,AccessesByPerson) ->
                             case InUse of
                                 false ->
                                     _Online = getOnline(Users),
-                                    _Albums = maps:update(Name,{PID,Username,lists:delete(Username,Users)},Albums),
+                                    _Albums = maps:update(Name,{PID,Username,maps:update(Username,false,Users)},Albums),
                                     if
                                         length(_Online) == 1 ->
                                             From ! {?MODULE, true},
@@ -117,14 +117,12 @@ loop(Albums,AccessesByPerson) ->
                 error ->
                     From ! {?MODULE, {error, "Album doesn't exists"}},
                     loop(Albums,AccessesByPerson);
-                {PID,InUse,Users} ->
+                {ok,{PID,InUse,Users}} ->
                     {ok,PermissionSet} = maps:find(Username,AccessesByPerson),
                     HasPerms = sets:is_element(Name,PermissionSet),
                     if
                         HasPerms ->
                             album_manager:writeAlbum(PID,Files),
-                            %AccessesByPerson {Username : Set(AlbumNome) }
-                            %Users {Username : status}
                             OldUsers = sets:from_list(maps:keys(Users)),
                             _NewUsers = sets:from_list(NewUsers),
                             _Users = maps:from_list(lists:map(fun(U)-> {U,false} end,NewUsers)),
@@ -156,7 +154,7 @@ loop(Albums,AccessesByPerson) ->
                 error ->
                     From ! {?MODULE, {error, "Album doesn't exists"}},
                     loop(Albums,AccessesByPerson);
-                {PID,InUse,Users} ->
+                {ok,{PID,InUse,Users}} ->
                     case InUse of
                         false -> 
                             From ! {?MODULE, {error, "Can't leave without first asking"}},
@@ -164,8 +162,8 @@ loop(Albums,AccessesByPerson) ->
                         _Username ->
                             if
                                 _Username == Username ->
-                                    _Albums = maps:update(Name,{PID,false,Users}),
-                                    Clock = album_manager:addClock(PID,Clock,Position),
+                                    _Albums = maps:update(Name,{PID,false,Users},Albums),
+                                    album_manager:addClock(PID,Clock,Position),
                                     From ! {?MODULE, {ok}},
                                     loop(_Albums,AccessesByPerson);
                                 true ->
@@ -179,7 +177,7 @@ loop(Albums,AccessesByPerson) ->
                 error ->
                     From ! {?MODULE, {error, "Album doesn't exists"}},
                     loop(Albums,AccessesByPerson);
-                {PID,InUse,Users} ->
+                {ok,{PID,InUse,Users}} ->
                     {ok,PermissionSet} = maps:find(Username,AccessesByPerson),
                     HasPerms = sets:is_element(Name,PermissionSet),
                     if
@@ -190,11 +188,11 @@ loop(Albums,AccessesByPerson) ->
                                     loop(Albums,AccessesByPerson);
                                 true -> %else
                                     _Users = maps:update(Username,{Adress,Port},Users),
-                                    _Albums = maps:update(Name,{PID,InUse,_Users}),
+                                    _Albums = maps:update(Name,{PID,InUse,_Users},Albums),
                                     _Online = getOnline(Users),
                                     if
                                         _Online == [] ->
-                                            Files = album_manager:getAlbum(PID),
+                                            {ok,Files} = album_manager:getAlbum(PID),
                                             From ! {?MODULE, {files, Files,maps:keys(Users)}},
                                             loop(_Albums,AccessesByPerson);
                                         true ->

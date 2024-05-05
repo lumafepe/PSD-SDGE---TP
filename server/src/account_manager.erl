@@ -5,9 +5,6 @@
 % inicia o gestor de contas e regista o processo como account_manager
 start() ->
     Users = #{
-    "MAX"=>{"VERSTAPPEN",false},
-    "LEWIS"=>{"HAMILTON",false},
-    "SERGIO"=>{"PEREZ",false}
     },
     register(?MODULE, spawn(fun() -> loop(Users) end)). 
 
@@ -35,7 +32,7 @@ loop(Accounts) ->
             case maps:find(Username,Accounts) of 
                 error -> 
                     From ! {?MODULE, ok},
-                    album_manager:addUser(Username),
+                    albums_manager:addUser(Username),
                     loop(maps:put(Username,{Password,false}, Accounts));
                 _ -> 
                     From ! {?MODULE, {error, username_taken}},

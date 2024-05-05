@@ -6,7 +6,7 @@
 
 
 getAlbumName(Msg) ->
-    maps:get(name,maps:get(album_name,Msg)).
+    maps:get(album_name,Msg).
 getAlbumUsernames(Msg) ->
     maps:get(users,maps:get(album,Msg)).
 
@@ -51,7 +51,7 @@ logoutHandler(Socket, Username) ->
         ok ->
             io:fwrite("Logged out user: ~p.\n", [Username]),
             answer_manager:success(Socket),
-            authenticator:authentication(Socket); % unauthenticatedArea
+            ok;
         {error, ErrorMsg} ->
             io:fwrite("~p ~p\n", [ErrorMsg, Username]),
             answer_manager:errorReply(Socket,ErrorMsg),
@@ -61,14 +61,14 @@ logoutHandler(Socket, Username) ->
 
 albumsListHandler(Socket, Username) ->
     io:fwrite("Getting list of albums user: ~p.\n", [Username]),
-    {ok, Albums} = album_manager:listAlbums(Username), %set(album_Name)
+    {ok, Albums} = albums_manager:listAlbums(Username), %set(album_Name)
     io:fwrite("found albums for user: ~p.\n", [Username]),
     answer_manager:listAlbums(Socket,Albums),
     loop(Socket,Username).
 
 albumCreateHandler(Socket,Username,Name) ->
     io:fwrite("Creating new album: ~p.\n", [Name]),
-    case album_manager:createAlbum(Username,Name) of
+    case albums_manager:createAlbum(Username,Name) of
         ok ->
             io:fwrite("New album created: ~p.\n", [Name]),
             answer_manager:success(Socket),

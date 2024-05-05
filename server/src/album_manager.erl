@@ -4,14 +4,14 @@
 
 start() ->
     Files = #{}, %{Nome:{HASH,{user:valor }}}
-    Vectors = #{}, %{Position : Value}
+    Vectors = #{0=>0}, %{Position : Value}
     AvaiableVectors = sets:new(), % positions
     loop(Files,Vectors,AvaiableVectors).
 
 rpc(PID,Request) ->
     PID ! {Request,self()},
     receive
-        {PID, Result} -> Result
+        {_, Result} -> Result
     end.
 
 getAlbum(PID) ->
@@ -40,7 +40,7 @@ loop(Files,Vectors,AvaiableVectors) ->
     receive
         {{get}, From} ->
             From ! {?MODULE, {ok, Files}},
-            loop(Files,Vectors,AvaiableVectors);
+            loop(Files,#{0=>0},sets:new());
         {{write,_Files}, From} ->
             From ! {?MODULE, {ok}},
             loop(_Files,Vectors,AvaiableVectors);

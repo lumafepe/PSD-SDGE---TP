@@ -13,7 +13,6 @@ success(Socket) ->
     gen_tcp:send(Socket,Reply).
 
 
-
 listAlbums(Socket,Albums_set) ->
     Reply = messages:encode_msg(#{type=>'ALBUMS',albums=>#{names => sets:to_list(Albums_set)}}, 'Message'),
     gen_tcp:send(Socket,Reply).

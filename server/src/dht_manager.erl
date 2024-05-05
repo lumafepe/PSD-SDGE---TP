@@ -1,10 +1,6 @@
 -module(dht_manager).
 -export([start/0,startEntrance/3, endEntrance/3, read/1, write/1]).
 
-str2Hash(Str) ->
-    list_to_integer(Str, 16) rem (1 bsl 32).
-
-
 
 binary_search(List, _, Low, High) when Low > High -> lists:nth(1, List) ;  % If low > high, return first.
 binary_search(List, Value, Low, High) ->
