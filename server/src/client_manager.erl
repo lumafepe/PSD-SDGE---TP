@@ -4,6 +4,26 @@
 
 % AUTHENTICATED REQUESTS
 
+
+getAlbumName(Msg) ->
+    maps:get(name,maps:get(album_name,Msg)).
+getAlbumUsernames(Msg) ->
+    maps:get(users,maps:get(album,Msg)).
+
+getAlbumFiles(Msg) ->
+    FilesList = maps:get(files,maps:get(album,Msg)), % List of maps
+    maps:from_list(lists:map(
+        fun(File) -> 
+            ClassificationsList = maps:get(classifications,File),
+            Classifications = maps:from_list(lists:map(fun(Class)-> {maps:get(username,Class),maps:get(value,Class)} end,ClassificationsList)),
+            {maps:get(name,File),{maps:get(hash,File),Classifications}}
+        end,
+    FilesList)).
+
+getDHTToken(Msg) ->
+    maps:get(token,Msg).
+
+
 % processo em loop à espera de pedidos do user
 loop(Socket,Username) ->
     receive
@@ -13,12 +33,13 @@ loop(Socket,Username) ->
             case maps:get(type,Msg) of
                 'ALBUMSLIST' -> albumsListHandler(Socket, Username);
                 'LOGOUT' -> logoutHandler(Socket, Username);
-                'ALBUMCREATE' -> albumCreateHandler(Socket,Username,maps:get(name,maps:get(album_name,Msg)));
-                'ALBUMEDIT' -> albumEditHandler(Socket,Username,maps:get(name,maps:get(album_name,Msg)));
-                'ISLAST' -> albumIsLastHandler(Socket,Username,maps:get(name,maps:get(album_name,Msg)));
-                'LEAVE' -> albumLeaveHandler(Socket,Username,maps:get(name,maps:get(leave_data,Msg)),maps:get(clock,maps:get(leave_data,Msg)));
-                'READ' -> readHandler(Socket,Username,maps:get(token,Msg));
-                'WRITE' -> writeHandler(Socket,Username,maps:get(token,Msg))
+                'ALBUMCREATE' -> albumCreateHandler(Socket,Username,getAlbumName(Msg));
+                'ALBUMEDIT' -> albumEditHandler(Socket,Username,getAlbumName(Msg));
+                'ISLAST' -> albumIsLastHandler(Socket,Username,getAlbumName(Msg));
+                'UPDATE' -> albumUpdateHandler(Socket,Username,getAlbumName(Msg),getAlbumUsernames(Msg),getAlbumFiles(Msg));
+                'LEAVE' -> albumLeaveHandler(Socket,Username,maps:get(name,maps:get(leave_data,Msg)),maps:get(clock,maps:get(leave_data,Msg)),maps:get(position,maps:get(leave_data,Msg)));
+                'READ' -> readHandler(Socket,Username,getDHTToken(Msg));
+                'WRITE' -> writeHandler(Socket,Username,getDHTToken(Msg))
             end;
         % if socket closes logout Client
         _ -> logoutHandler(Socket,Username)
@@ -70,9 +91,9 @@ albumEditHandler(Socket,Username,Name) ->
             io:fwrite("album fetched: ~p and was first.\n", [Name]),
             answer_manager:album(Socket,Files,Users),
             loop(Socket,Username);
-        {online, _Online,Clock} ->
+        {online, _Online,Clock,Position} ->
             io:fwrite("album fetched: ~p and had clients\n", [Name]),
-            answer_manager:new_client(Socket,_Online,Clock),
+            answer_manager:new_client(Socket,_Online,Clock,Position),
             loop(Socket,Username)
     end.
 
@@ -89,9 +110,24 @@ albumIsLastHandler(Socket,Username,Name) ->
             loop(Socket,Username)
     end.
 
-albumLeaveHandler(Socket,Username,Name,Clock) ->
+
+albumUpdateHandler(Socket,Username,Name,Users,Files) ->
+    io:fwrite("Updating information in server for album: album:~p user:~p.\n", [Name,Username]),
+    case albums_manager:update(Username,Name,Files,Users) of
+        {error, ErrorMsg} ->
+            io:fwrite("~p ~p.\n", [ErrorMsg, Name]),
+            answer_manager:errorReply(Socket,ErrorMsg),
+            loop(Socket,Username);
+        _ ->
+            io:fwrite("Updated Album: ~p.\n", [Name]),
+            answer_manager:success(Socket),
+            loop(Socket,Username)
+    end.
+
+
+albumLeaveHandler(Socket,Username,Name,Clock,Position) ->
     io:fwrite("Finishing leaving process: album:~p user:~p.\n", [Name,Username]),
-    case albums_manager:leave(Username,Name,Clock) of
+    case albums_manager:leave(Username,Name,Clock,Position) of
         {error, ErrorMsg} ->
             io:fwrite("~p ~p.\n", [ErrorMsg, Name]),
             answer_manager:errorReply(Socket,ErrorMsg),
@@ -128,4 +164,7 @@ writeHandler(Socket,Username, Token) ->
             answer_manager:server(Socket,Data),
             loop(Socket,Username)
 end.
-    
+
+
+
+

@@ -1,6 +1,6 @@
 -module(answer_manager).
 
--export([errorReply/2, success/1, listAlbums/2, album/3, nodes/2, server/2,new_client/3,is_last/2]).
+-export([errorReply/2, success/1, listAlbums/2, album/3, nodes/2, server/2,new_client/4,is_last/2]).
 
 % reply to request
 errorReply(Socket,Msg) ->
@@ -53,11 +53,11 @@ parseClient(Username,Ip,Port) ->
         port => Port
     }.
 
-new_client(Socket,Clients,Clock) ->
+new_client(Socket,Clients,Clock,Position) ->
     % Clock int
     % Clients {Username:{IP,Port}}
     ParsedClients = lists:map(fun({Username,{Ip,Port}}) ->parseClient(Username,Ip,Port) end,maps:to_list(Clients)),
-    Reply = messages:encode_msg(#{type=>'NEWCLIENT',new_client=>#{clients=>ParsedClients,clock=>Clock}}, 'Message'),
+    Reply = messages:encode_msg(#{type=>'NEWCLIENT',new_client=>#{clients=>ParsedClients,clock=>Clock,position=>Position}}, 'Message'),
     gen_tcp:send(Socket,Reply).
 
 is_last(Socket,Value) ->

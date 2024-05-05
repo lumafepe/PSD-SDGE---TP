@@ -1,6 +1,6 @@
--module(album_manager).
+-module(albums_manager).
 
--export([start/0, listAlbums/1, addUser/1, createAlbum/2,editAlbum/4,isLast/2,leave/3]).
+-export([start/0, listAlbums/1, addUser/1, createAlbum/2,editAlbum/4,isLast/2,leave/4,update/4]).
 
 start() ->
     Albums = #{}, % {AlbumNome : {PID,inUse,{Username : status} } }
@@ -29,8 +29,12 @@ editAlbum(Username,Name,Adress,Port) ->
 isLast(Username,Name) ->
     rpc({isLast,Username,Name}).
 
-leave(Username,Name,Clock) ->
-    rpc({leave,Username,Name,Clock}).
+leave(Username,Name,Clock,Position) ->
+    rpc({leave,Username,Name,Clock,Position}).
+
+update(Username,Name,Files,Users) ->
+    rpc({update,Username,Name,Files,Users}).
+    
 
 getOnline(Users) ->
     Status = maps:values(Users),
@@ -108,7 +112,7 @@ loop(Albums,AccessesByPerson) ->
                             loop(Albums,AccessesByPerson)
                     end
             end;
-        {{leave,Username,Name,Clock}, From} ->
+        {{update,Username,Name,Files,NewUsers}, From} ->
             case maps:find(Name,Albums) of 
                 error ->
                     From ! {?MODULE, {error, "Album doesn't exists"}},
@@ -118,26 +122,56 @@ loop(Albums,AccessesByPerson) ->
                     HasPerms = sets:is_element(Name,PermissionSet),
                     if
                         HasPerms ->
-                            case InUse of
-                                false -> 
-                                    From ! {?MODULE, {error, "Can't leave without first asking"}},
-                                    loop(Albums,AccessesByPerson);
-                                _Username -> %else
-                                    if
-                                        _Username == InUse ->
-                                            _Users = maps:update(Username,false,Users),
-                                            _Albums = maps:update(Name,{PID,false,_Users}),
-                                            Clock = album_manager:addClock(PID,Clock),
-                                            From ! {?MODULE, {ok}},
-                                            loop(_Albums,AccessesByPerson);
-                                        true ->
-                                            From ! {?MODULE, {error, "Can't leave another user is leaving"}},
-                                            loop(Albums,AccessesByPerson)
-                                    end
-                            end;
+                            album_manager:writeAlbum(PID,Files),
+                            %AccessesByPerson {Username : Set(AlbumNome) }
+                            %Users {Username : status}
+                            OldUsers = sets:from_list(maps:keys(Users)),
+                            _NewUsers = sets:from_list(NewUsers),
+                            _Users = maps:from_list(lists:map(fun(U)-> {U,false} end,NewUsers)),
+                            UsersAdded = sets:subtract(_NewUsers,OldUsers),
+                            UsersRemoved = sets:subtract(OldUsers,_NewUsers),
+                            _AccessesByPerson = sets:fold(
+                                fun(U,Acc) ->
+                                    {ok, CurrAlbums} = maps:find(U,Acc),
+                                    maps:update(U,sets:add_element(Name,CurrAlbums),Acc) 
+                                end,
+                            AccessesByPerson,UsersAdded),
+                            __AccessesByPerson = sets:fold(
+                                fun(U,Acc) ->
+                                    {ok, CurrAlbums} = maps:find(U,Acc),
+                                    maps:update(U,sets:del_element(Name,CurrAlbums),Acc) 
+                                end,
+                            _AccessesByPerson,UsersRemoved),
+                            _Albums = maps:update(Name,{PID,InUse,_Users},Albums),
+                            From ! {?MODULE, {ok}},
+                            loop(_Albums,__AccessesByPerson);
                         true ->
                             From ! {?MODULE, {error, "User doesn't have permission"}},
                             loop(Albums,AccessesByPerson)
+                    end
+            end;
+
+        {{leave,Username,Name,Clock,Position}, From} ->
+            case maps:find(Name,Albums) of 
+                error ->
+                    From ! {?MODULE, {error, "Album doesn't exists"}},
+                    loop(Albums,AccessesByPerson);
+                {PID,InUse,Users} ->
+                    case InUse of
+                        false -> 
+                            From ! {?MODULE, {error, "Can't leave without first asking"}},
+                            loop(Albums,AccessesByPerson);
+                        _Username ->
+                            if
+                                _Username == Username ->
+                                    _Albums = maps:update(Name,{PID,false,Users}),
+                                    Clock = album_manager:addClock(PID,Clock,Position),
+                                    From ! {?MODULE, {ok}},
+                                    loop(_Albums,AccessesByPerson);
+                                true ->
+                                    From ! {?MODULE, {error, "Can't leave another user is leaving"}},
+                                    loop(Albums,AccessesByPerson)
+                            end
                     end
             end;
         {{edit,Username,Name,Adress,Port}, From} ->
@@ -164,8 +198,8 @@ loop(Albums,AccessesByPerson) ->
                                             From ! {?MODULE, {files, Files,maps:keys(Users)}},
                                             loop(_Albums,AccessesByPerson);
                                         true ->
-                                            Clock = album_manager:getClock(PID),
-                                            From ! {?MODULE, {online, _Online,Clock}},
+                                            {Clock,Position} = album_manager:getClock(PID),
+                                            From ! {?MODULE, {online, _Online,Clock,Position}},
                                             loop(_Albums,AccessesByPerson)
                                     end
                             end;

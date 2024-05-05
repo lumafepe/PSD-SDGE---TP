@@ -5,17 +5,17 @@ package protos;
 message Message {
   Type type = 1;
   optional UserData user_data = 2;
-  optional ErrorReply error_message = 4;
-  optional AlbumName album_name = 5;
-  optional Albums albums = 7;
-  optional Album album = 8;
-  optional NodeInfo node_info = 9;
-  repeated NodeInfo nodes_infos = 10;
-  optional uint64 token = 11;
-  repeated NodeIp nodes_ips = 12;
-  optional NewClient new_client = 13;
-  optional bool is_last = 6;
-  optional LeaveData leave_data = 3;
+  optional ErrorReply error_message = 3;
+  optional AlbumName album_name = 4;
+  optional Albums albums = 5;
+  optional Album album = 6;
+  optional NodeInfo node_info = 7;
+  repeated NodeInfo nodes_infos = 8;
+  optional uint64 token = 9;
+  repeated NodeIp nodes_ips = 10;
+  optional NewClient new_client = 11;
+  optional bool is_last = 12;
+  optional LeaveData leave_data = 13;
 }
 
 // C2S -> Client to Server
@@ -23,15 +23,15 @@ message Message {
 
 // Type -> IN Data | Out Data
 enum Type {
-  SUCESIUM = 3; // S2C -> None
-  ERRORREPLY = 4; // S2C -> error_message
-  ALBUMS = 8; // S2C -> albums
-  REGISTER = 0; // C2S -> user_data | {SUCESIUM | ERRORREPLY}
-  LOGIN = 1; // C2S -> user_data | {SUCESIUM | ERRORREPLY}
-  LOGOUT = 2; // C2S -> None | {SUCESIUM | ERRORREPLY}
-  ALBUMSLIST = 5; // C2S -> None | ALBUMS
-  ALBUMCREATE = 6; // C2S -> album_name | {SUCESIUM | ERRORREPLY}
-  ALBUM = 7; // S2C -> album
+  SUCESIUM = 0; // S2C -> None
+  ERRORREPLY = 1; // S2C -> error_message
+  ALBUMS = 2; // S2C -> albums
+  REGISTER = 3; // C2S -> user_data | {SUCESIUM | ERRORREPLY}
+  LOGIN = 4; // C2S -> user_data | {SUCESIUM | ERRORREPLY}
+  LOGOUT = 5; // C2S -> None | {SUCESIUM | ERRORREPLY}
+  ALBUMSLIST = 6; // C2S -> None | ALBUMS
+  ALBUMCREATE = 7; // C2S -> album_name | {SUCESIUM | ERRORREPLY}
+  ALBUM = 8; // S2C -> album
   ALBUMEDIT = 9; // C2S -> album_name | {ALBUM | ERRORREPLY | NEWCLIENT}
   STARTENTRANCE = 10;  //C2S -> node_info | {ERRORREPLY | nodes}
   ENDENTRANCE = 11; //C2S -> node_info | {SUCESIUM | ERRORREPLY}
@@ -43,6 +43,7 @@ enum Type {
   ISLASTREPLY = 17; // S2C -> is_last
   ISLAST = 18; // C2S -> album_name | {ERRORREPLY | ISLASTREPLY}
   LEAVE = 19; // C2S -> leave_data | {ERRORREPLY | SUCESIUM}
+  UPDATE = 20; // C2S -> {album_name & album} | {ERRORREPLY | SUCESIUM}
 }
 
 message UserData {
@@ -83,11 +84,13 @@ message Client {
 message NewClient {
   repeated Client clients = 1;
   uint32 clock = 2;
+  uint32 position = 3;
 }
 
 message LeaveData {
   string name = 1;
-  uint32 clock = 2; 
+  uint32 clock = 2;
+  uint32 position =3; 
 }
 
 message Album {
