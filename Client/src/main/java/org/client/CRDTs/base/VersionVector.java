@@ -1,12 +1,12 @@
-package org.example.CRDTs;
+package org.client.crdts.base;
 
 import java.io.Serializable;
 
-public class VectorClock implements Serializable {
+public class VersionVector implements Serializable {
     public String nodeId;
     public int counter;
 
-    public VectorClock(String nodeId, int counter) {
+    public VersionVector(String nodeId, int counter) {
         this.nodeId = nodeId;
         this.counter = counter;
     }

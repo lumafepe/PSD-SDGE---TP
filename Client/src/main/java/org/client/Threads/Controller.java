@@ -1,14 +1,13 @@
-package org.example.Threads;
+package org.client.threads;
 
 import client.central.*;
 import client.p2p.*;
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.example.CBcast;
-import org.example.CRDTs.GOSet;
-import org.example.CRDTs.ORset;
-import org.example.CRDTs.Operation;
-import org.example.CRDTs.VectorClock;
-import org.example.Rating;
+import org.client.Broadcaster;
+import org.client.crdts.GOSet;
+import org.client.crdts.ORset;
+import org.client.crdts.base.Operation;
+import org.client.Rating;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
@@ -21,18 +20,14 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
-import com.google.protobuf.ByteString;
 
 public class Controller extends Thread{
     String bindPort;
     GOSet fileRatingsCRDT;
     ORset filesCRDT;
     ORset usersCRDT;
-    CBcast causalBroadcast;
+    Broadcaster causalBroadcast;
     Socket centralServer;
     PrintWriter out;
     BufferedReader in;
@@ -43,7 +38,7 @@ public class Controller extends Thread{
         this.fileRatingsCRDT = new GOSet();
         this.filesCRDT = new ORset();
         this.usersCRDT = new ORset();
-        this.causalBroadcast = new CBcast();
+        this.causalBroadcast = new Broadcaster();
         centralServer = new Socket("localhost", 4321);
         out = new PrintWriter(centralServer.getOutputStream(), true);
         in = new BufferedReader(new InputStreamReader(centralServer.getInputStream()));
@@ -57,7 +52,7 @@ public class Controller extends Thread{
     public void run() {
         System.out.println("Controller started working at port: " + bindPort);
         try (ZContext context = new ZContext();
-             ZMQ.Socket router = context.createSocket(SocketType.ROUTER)) {
+            ZMQ.Socket router = context.createSocket(SocketType.ROUTER)) {
             router.bind("tcp://localhost:" + bindPort);
             router.setIdentity(bindPort.getBytes());
 

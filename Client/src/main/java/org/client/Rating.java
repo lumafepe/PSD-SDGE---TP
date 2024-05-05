@@ -1,4 +1,4 @@
-package org.example;
+package org.client;
 
 import java.io.Serializable;
 

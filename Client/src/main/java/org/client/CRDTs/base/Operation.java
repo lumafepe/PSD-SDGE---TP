@@ -1,6 +1,5 @@
-package org.example.CRDTs;
+package org.client.crdts.base;
 
-import client.p2p.Client;
 import client.p2p.OperationMessage;
 
 import java.io.*;
@@ -10,17 +9,17 @@ import java.util.Set;
 public class Operation implements Serializable{
     public String operation;
     public String element;
-    public VectorClock vectorClock;
-    public Set<VectorClock> observed;
+    public VersionVector versionVector;
+    public Set<VersionVector> observed;
     // For ratings
     public String user;
     public String fileName;
     public int rating;
 
-    public Operation(String operation, String element, VectorClock vectorClock, Set<VectorClock> observed) {
+    public Operation(String operation, String element, VersionVector versionVector, Set<VersionVector> observed) {
         this.operation = operation;
         this.element = element;
-        this.vectorClock = vectorClock;
+        this.versionVector = versionVector;
         this.observed = observed;
     }
 
@@ -38,11 +37,11 @@ public class Operation implements Serializable{
             this.element = om.getElement();
 
         if (om.hasVectorClock())
-            this.vectorClock = new VectorClock(om.getVectorClock().getNodeId(), om.getVectorClock().getCounter());
+            this.versionVector = new VersionVector(om.getVectorClock().getNodeId(), om.getVectorClock().getCounter());
 
         this.observed = new HashSet<>();
         for (client.p2p.VectorClock vectorClock : om.getObservedList()) {
-            this.observed.add(new VectorClock(vectorClock.getNodeId(), (int)vectorClock.getCounter()));
+            this.observed.add(new VersionVector(vectorClock.getNodeId(), (int)vectorClock.getCounter()));
         }
 
         if (om.hasUser())
@@ -64,18 +63,18 @@ public class Operation implements Serializable{
         if (this.element != null)
             builder.setElement(element);
 
-        if (this.vectorClock != null) {
+        if (this.versionVector != null) {
             builder.setVectorClock(client.p2p.VectorClock.newBuilder()
-                    .setCounter(this.vectorClock.counter)
-                    .setNodeId(this.vectorClock.nodeId)
+                    .setCounter(this.versionVector.counter)
+                    .setNodeId(this.versionVector.nodeId)
                     .build());
         }
 
         if (observed != null) {
-            for (VectorClock vectorClock : observed) {
+            for (VersionVector versionVector : observed) {
                 builder.addObserved(client.p2p.VectorClock.newBuilder()
-                        .setNodeId(vectorClock.nodeId)
-                        .setCounter(vectorClock.counter)
+                        .setNodeId(versionVector.nodeId)
+                        .setCounter(versionVector.counter)
                         .build());
             }
         }
@@ -93,7 +92,7 @@ public class Operation implements Serializable{
     }
 
     public String toString(){
-        return operation + ", " + element + ", " + vectorClock + ", " + observed;
+        return operation + ", " + element + ", " + versionVector + ", " + observed;
     }
 
     public void fromString(String s){
