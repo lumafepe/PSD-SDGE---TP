@@ -4,7 +4,7 @@
 % Bind server to port
 start() ->
     account_manager:start(),
-    album_manager:start(),
+    albums_manager:start(),
     dht_manager:start(),
     {ok, LSock} = gen_tcp:listen(4321, [binary, {active, once}, {packet, 0}]),
     spawn(fun() -> acceptor(LSock) end),

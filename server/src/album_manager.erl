@@ -1,94 +1,67 @@
 -module(album_manager).
 
--export([start/0, listAlbums/1, addUser/1, createAlbum/2, getAlbum/2]).
+-export([start/0, getAlbum/1, writeAlbum/2, addClock/3, getClock/1]).
 
 start() ->
-    Albums = #{},
-    Accesses = #{
-        "MAX" => sets:new(),
-        "LEWIS" => sets:new(),
-        "SERGIO" =>  sets:new()
-        },
-    register(?MODULE, spawn(fun() -> loop(Albums,Accesses) end)).
+    Files = #{}, %{Nome:{HASH,{user:valor }}}
+    Vectors = #{0=>0}, %{Position : Value}
+    AvaiableVectors = sets:new(), % positions
+    loop(Files,Vectors,AvaiableVectors).
 
-rpc(Request) ->
-    ?MODULE ! {Request,self()},
+rpc(PID,Request) ->
+    PID ! {Request,self()},
     receive
-        {?MODULE, Result} -> Result
+        {_, Result} -> Result
     end.
 
-listAlbums(Username) ->
-    rpc({listAlbums,Username}).
-
-addUser(Username) ->
-    rpc({addUser,Username}).
-
-createAlbum(Username,Name) ->
-    rpc({create,Username,Name}).
-
-getAlbum(Username,Name) ->
-    rpc({get,Username,Name}).
+getAlbum(PID) ->
+    rpc(PID,{get}).
+writeAlbum(PID,Files) ->
+    rpc(PID,{write,Files}).
+addClock(PID,Clock,Position) ->
+    rpc(PID,{addClock,Clock,Position}).
+getClock(PID) ->
+    rpc(PID,{getClock}).
+    
 
 
-addAlbumName(Albums, Name) ->
-    maps:put(Name,sets:new(),Albums).
+popSet(Set) ->
+    {{X},Y} = sets:fold(
+        fun(X,Acc) ->
+            case Acc of
+                {false,S} -> {{X},S};
+                {A,S} -> {A,sets:add_element(X,S)}
+            end
+        end,
+    {false,sets:new()},Set),
+    {X,Y}.
 
-addAlbumAccess(Accesses, Name, Username) ->
-    case maps:find(Username,Accesses) of
-        {ok, CurrAlbums} ->
-            NewAlbums = sets:add_element(Name,CurrAlbums),
-            maps:update(Username,NewAlbums,Accesses);
-        _ -> % Will never happen sinse it is verified that the user has access to the Album before
-            Accesses
-end.
-
-
-%Accesses = Map{Username => Set{Albums}}
-%Albums = Map{Name => Set{files}}
-loop(Albums,Accesses) ->
+loop(Files,Vectors,AvaiableVectors) ->
     receive
-        {{addUser,Username}, From} ->
-            From ! {?MODULE, ok},
-            loop(Albums,maps:put(Username,sets:new(), Accesses));
-
-        {{listAlbums, Username}, From} ->
-            case maps:find(Username,Accesses) of
-                {ok , AlbumsList} ->
-                    From ! {?MODULE, {ok, AlbumsList}},
-                    loop(Albums,Accesses);
-                _ -> % will never happen
-                    From ! {?MODULE, {ok, sets:new()}},
-                    loop(Albums,Accesses)
-            end;
-        {{get,Username,Name}, From} ->
-            case maps:find(Name,Albums) of
-                {ok, Album} ->
-                    case maps:find(Username,Accesses) of
-                        {ok, AlbumsList} -> 
-                            case sets:is_element(Name,AlbumsList) of
-                                true ->
-                                    From ! {?MODULE, Album},
-                                    loop(Albums,Accesses);
-                                false ->
-                                    From ! {?MODULE, {error, "User doesn't have permission"}},
-                                    loop(Albums,Accesses)
-                            end;
-                        _ -> %Will never happen
-                            loop(Albums,Accesses)
-                        end;
-                _ ->
-                    From ! {?MODULE, {error, "Album doesn't exists"}},
-                    loop(Albums,Accesses)
-            end;
-
-        {{create,Username,Name}, From} ->
-            case maps:find(Name,Albums) of 
-                error ->
-                    From ! {?MODULE, ok},
-                    loop(addAlbumName(Albums,Name),addAlbumAccess(Accesses, Name, Username));
-                _ ->
-                    From ! {?MODULE, {error, "Album already exists"}},
-                    loop(Albums,Accesses)
+        {{get}, From} ->
+            From ! {?MODULE, {ok, Files}},
+            loop(Files,#{0=>0},sets:new());
+        {{write,_Files}, From} ->
+            From ! {?MODULE, {ok}},
+            loop(_Files,Vectors,AvaiableVectors);
+        {{addClock,Clock,Position}, From} ->
+            _AvaiableVectors = sets:add_element(position,AvaiableVectors),
+            _Vectors = maps:update(Position,Clock,Vectors),
+            From ! {?MODULE, {ok}},
+            loop(Files,_Vectors,_AvaiableVectors);
+        {{getClock}, From} ->
+            NoVectorsFree = sets:is_empty(AvaiableVectors),
+            if 
+                NoVectorsFree ->
+                    NewPosition = length(maps:to_list(Vectors)),
+                    _Vectors = maps:put(NewPosition,0,Vectors),
+                    From ! {?MODULE, {0,NewPosition}},
+                    loop(Files,_Vectors,AvaiableVectors);
+                true ->
+                    {Position,_AvaiableVectors} = popSet(AvaiableVectors),
+                    {ok,Clock} = maps:find(Position,Vectors),
+                    From ! {?MODULE, {Clock,Position}},
+                    loop(Files,Vectors,_AvaiableVectors)
             end
     end.
 

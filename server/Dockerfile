@@ -4,6 +4,11 @@ FROM erlang:24
 # Set the working directory inside the container
 WORKDIR /app
 
+# Clone the git repository
+RUN git clone https://github.com/tomas-abrahamsson/gpb.git \
+    && cd gpb \
+    && make 
+
 # Copy the content of the src folder into the container
 COPY src /app/src
 
@@ -12,11 +17,6 @@ COPY messages.proto messages.proto
 COPY rebar.config rebar.lock ./
 
 RUN mkdir ebin
-
-# Clone the git repository
-RUN git clone https://github.com/tomas-abrahamsson/gpb.git \
-    && cd gpb \
-    && make 
 
 RUN gpb/bin/protoc-erl -I. -maps -o src messages.proto 
 RUN erlc -I gpb/include -o ebin src/messages.erl 
