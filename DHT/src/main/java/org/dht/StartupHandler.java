@@ -59,7 +59,7 @@ public class StartupHandler implements Runnable {
 
             return announceEntry();
         }
-        return reply.getNodesInfoList();
+        return reply.getNodesInfosList();
     }
 
     private Map<Long, InetSocketAddress> computeServersToCopyFrom(List<NodeInfo> nodeInfos) {
