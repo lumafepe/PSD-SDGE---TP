@@ -2990,15 +2990,15 @@ msg_name_to_fqbin('NodeIp') -> <<"protos.NodeIp">>;
 msg_name_to_fqbin(E) -> error({gpb_error, {badmsg, E}}).
 
 
-fqbin_to_enum_name(<<"protos.Type">>) -> 'Type';
+fqbin_to_enum_name(<<"dht.messages.central.Type">>) -> 'Type';
 fqbin_to_enum_name(E) -> error({gpb_error, {badenum, E}}).
 
 
-enum_name_to_fqbin('Type') -> <<"protos.Type">>;
+enum_name_to_fqbin('Type') -> <<"dht.messages.central.Type">>;
 enum_name_to_fqbin(E) -> error({gpb_error, {badenum, E}}).
 
 
-get_package_name() -> protos.
+get_package_name() -> 'dht.messages.central'.
 
 
 %% Whether or not the message names
@@ -3064,7 +3064,7 @@ get_proto_by_msg_name_as_fqbin(E) -> error({gpb_error, {badmsg, E}}).
 get_proto_by_service_name_as_fqbin(E) -> error({gpb_error, {badservice, E}}).
 
 
-get_proto_by_enum_name_as_fqbin(<<"protos.Type">>) -> "messages";
+get_proto_by_enum_name_as_fqbin(<<"dht.messages.central.Type">>) -> "messages";
 get_proto_by_enum_name_as_fqbin(E) -> error({gpb_error, {badenum, E}}).
 
 
