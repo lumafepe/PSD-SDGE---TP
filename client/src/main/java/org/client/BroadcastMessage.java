@@ -1,6 +1,6 @@
 package org.client;
 
-import org.client.CRDTs.base.Operation;
+import org.client.crdts.base.Operation;
 import org.client.utils.VectorClock;
 
 import java.io.*;

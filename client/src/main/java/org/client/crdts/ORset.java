@@ -1,7 +1,7 @@
-package org.client.CRDTs;
+package org.client.crdts;
 
-import org.client.CRDTs.base.Operation;
-import org.client.CRDTs.base.VersionVector;
+import org.client.crdts.base.Operation;
+import org.client.crdts.base.VersionVector;
 
 import java.util.HashMap;
 import java.util.HashSet;

@@ -1,19 +1,16 @@
 package org.client;
 
-import org.client.CRDTs.Album;
-import org.client.CRDTs.base.Operation;
+import org.client.crdts.Album;
+import org.client.crdts.base.Operation;
 import org.client.utils.VectorClock;
-import org.zeromq.ZMQ;
 
 import java.io.IOException;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 
 public class Broadcaster {
 
-    private final List<String> network;
-    private final ZMQ.Socket router;
+    private final Network network;
 
     private final VectorClock version;
     private final int self;
@@ -21,10 +18,9 @@ public class Broadcaster {
     private final Queue<BroadcastMessage> pending;
     private final Album crdts = Album.getInstance();
 
-    public Broadcaster(List<String> network, int self, int selfValue, ZMQ.Socket router) {
+    public Broadcaster(Network network, int self, int selfValue) {
         this.network = network;
         this.self = self;
-        this.router = router;
 
         this.version = new VectorClock(network.size() + 1, self);
         for (int i = 0; i < selfValue; i++) {
@@ -35,7 +31,7 @@ public class Broadcaster {
     }
 
     private boolean canDeliver(BroadcastMessage message) {
-        return this.version.happensBefore(message.version()); // todo: check '!'
+        return this.version.happensBefore(message.version());
     }
 
     private void loopPending() {
@@ -58,12 +54,7 @@ public class Broadcaster {
 
         BroadcastMessage message = new BroadcastMessage(this.self, this.version, op);
         this.version.increment(this.self);
-
-        for (String identity : this.network) {
-            router.sendMore(identity);
-            router.sendMore("");
-            router.send(message.asBytes(), 0);
-        }
+        this.network.loopSend(message.asBytes()); // loop over peer network and send message
     }
 
     public void receive(BroadcastMessage message) {

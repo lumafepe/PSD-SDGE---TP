@@ -1,37 +1,42 @@
-package org.client.Threads;
+package org.client.threads;
 
 import client.central.*;
 import client.p2p.*;
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.client.BroadcastMessage;
 import org.client.Broadcaster;
-import org.client.CRDTs.base.Operation;
-import org.client.CRDTs.GOSet;
-import org.client.CRDTs.ORset;
+import org.client.crdts.base.Operation;
+import org.client.crdts.GOSet;
+import org.client.crdts.ORset;
 import org.client.Rating;
+import org.client.controllers.DHTController;
+import org.client.controllers.ServerController;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Controller extends Thread{
-    String bindPort;
+public class Controller extends Thread {
+    private final String bindPort;
+
+    private Broadcaster broadcaster;
+    private Album operations;
+
+    private DHTController dht;
+    private ServerController server;
+
+
+
     GOSet fileRatingsCRDT;
     ORset filesCRDT;
     ORset usersCRDT;
     Broadcaster causalBroadcast;
     Socket centralServer;
-    PrintWriter out;
-    BufferedReader in;
     List<String> sessionUsers;
     ZMQ.Socket router;
 
@@ -52,8 +57,6 @@ public class Controller extends Thread{
 
         this.causalBroadcast = new Broadcaster(sessionUsers, Integer.parseInt(bindPort) % 6000, 0, this.router);
         centralServer = new Socket("localhost", 4321);
-        out = new PrintWriter(centralServer.getOutputStream(), true);
-        in = new BufferedReader(new InputStreamReader(centralServer.getInputStream()));
 
     }
 
@@ -143,7 +146,7 @@ public class Controller extends Thread{
 
             }
             else if (msgReceived.startsWith("/createAlbum")){
-                String rest = msgReceived.substring("/register".length());
+                String rest = msgReceived.substring("/createAlbum".length());
                 String[] restSplit = rest.split(" ");
                 String albumName = restSplit[1];
 
@@ -160,7 +163,7 @@ public class Controller extends Thread{
 
             }
             else if (msgReceived.startsWith("/getAlbum")){
-                String rest = msgReceived.substring("/register".length());
+                String rest = msgReceived.substring("/getAlbum".length());
                 String[] restSplit = rest.split(" ");
                 String albumName = restSplit[1];
 

@@ -1,8 +1,7 @@
-package org.client.CRDTs;
+package org.client.crdts;
 
 import client.p2p.OperationMessage;
-import com.google.protobuf.InvalidProtocolBufferException;
-import org.client.CRDTs.base.Operation;
+import org.client.crdts.base.Operation;
 
 import java.util.HashMap;
 import java.util.Map;
