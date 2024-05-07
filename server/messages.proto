@@ -95,12 +95,12 @@ message Album {
 
 
 message NodeInfo{
-    string ip = 1;
-    uint32 port = 2;
-    repeated uint64 tokens = 3;
+  string ip = 1;
+  uint32 port = 2;
+  repeated uint64 tokens = 3;
 }
 
 message NodeIp{
-    string ip = 1;
-    uint32 port = 2;
+  string ip = 1;
+  uint32 port = 2;
 }

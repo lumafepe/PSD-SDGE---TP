@@ -31,7 +31,6 @@ public class StartupHandler implements Runnable {
         logger.info("Announcing entry");
         List<NodeInfo> nodes = announceEntry();
         logger.info("Entry announced. Computing servers to contact");
-        System.out.println(nodes);
         Map<Long, InetSocketAddress> serversToContact = computeServersToCopyFrom(nodes);
         logger.info("Transferring data");
         copyData(serversToContact);
