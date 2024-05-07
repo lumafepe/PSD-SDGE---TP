@@ -1,9 +1,11 @@
 package org.client.crdts;
 
+import org.messages.central.File;
 import org.messages.p2p.OperationMessage;
 import org.client.crdts.base.Operation;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @FunctionalInterface
@@ -68,6 +70,14 @@ public class Album {
 
     public void setFilesCRDT(ORset filesCRDT) {
         this.filesCRDT = filesCRDT;
+    }
+
+    public void setUsers(List<String> users){
+        //this.usersCRDT.setUsers(users);
+    }
+
+    public void setFiles(List<File> files){
+        //this.filesCRDT.setFiles(files);
     }
 
     public void setUsersCRDT(ORset usersCRDT) {

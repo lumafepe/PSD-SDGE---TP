@@ -10,6 +10,7 @@ import org.client.controllers.ServerController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Router extends Thread {
 
@@ -42,6 +43,23 @@ public class Router extends Thread {
             Message reply = this.server.handle(messageData);
 
             if (reply != null)
+                if (reply.getType() == Type.ALBUM){
+                    org.messages.central.Album album = reply.getAlbum();
+
+                    // Get users
+                    List<String> users = new ArrayList<>();
+                    for (String u : album.getUsersList()){
+                        users.add(u);
+                    }
+                    operations.setUsers(users);
+
+                    // Get files
+                    List<File> files = new ArrayList<>();
+                    for (File f : album.getFilesList()){
+                        files.add(f);
+                    }
+                    operations.setFiles(files);
+                }
                 this.network.self(message.identity(), reply);
             // todo: else log that an unknow operation has been sent
         }
@@ -62,5 +80,4 @@ public class Router extends Thread {
             this.routeMessage(message);
         }
     }
-
 }

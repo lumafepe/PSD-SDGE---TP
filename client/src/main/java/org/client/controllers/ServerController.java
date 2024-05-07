@@ -12,18 +12,18 @@ import java.util.List;
 public class ServerController {
 
     private static final List<String> operations = Arrays.asList(
-            "/register", "/login", "/logout", "/listAlbums", "/createAlbum", "/getAlbum");
+            "/register", "/login", "/logout", "/listAlbums", "/createAlbum", "/getAlbum", "/edit");
 
     private Socket serverSocket = null;
 
     public ServerController(String address, int port) {
-        /*try {
+        try {
             this.serverSocket = new Socket(address, port);
         }
         catch (IOException e) {
             e.printStackTrace(); // todo: replace with logger call
             System.exit(1);
-        }*/
+        }
     }
 
     public boolean handles(String data) {
@@ -58,10 +58,12 @@ public class ServerController {
         }
 
         if (data.startsWith("/getAlbum")) {
-            return this.send(ServerOperations.getAlbum(data));
+            //return this.send(ServerOperations.getAlbum(data));
         }
 
-        // TODO: editMessage
+        if (data.startsWith("/edit")) {
+            return this.send(ServerOperations.editAlbum(data));
+        }
 
         return null;
     }

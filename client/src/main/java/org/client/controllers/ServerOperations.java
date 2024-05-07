@@ -12,8 +12,8 @@ public class ServerOperations {
         String username = split[1];
         String password = split[2];
 
-        Register reg = Register.newBuilder().setUsername(username).setPassword(password).build();
-        return Message.newBuilder().setType(Type.REGISTER).setRegister(reg).build();
+        UserData reg = UserData.newBuilder().setUsername(username).setPassword(password).build();
+        return Message.newBuilder().setType(Type.REGISTER).setUserData(reg).build();
     }
 
     public static Message login(String data) {
@@ -24,8 +24,8 @@ public class ServerOperations {
         String username = split[1];
         String password = split[2];
 
-        Login l = Login.newBuilder().setUsername(username).setPassword(password).build();
-        return Message.newBuilder().setType(Type.LOGIN).setLogin(l).build();
+        UserData l = UserData.newBuilder().setUsername(username).setPassword(password).build();
+        return Message.newBuilder().setType(Type.LOGIN).setUserData(l).build();
     }
 
     public static Message logout(String data) {
@@ -43,19 +43,26 @@ public class ServerOperations {
 
         String albumName = split[1];
 
-        AlbumCreate a = AlbumCreate.newBuilder().setName(albumName).build();
-        return Message.newBuilder().setType(Type.ALBUMCREATE).setAlbumCreate(a).build();
+        return Message.newBuilder().setType(Type.ALBUMCREATE).setAlbumName(albumName).build();
     }
 
-    public static Message getAlbum(String data) {
+    /*public static Message getAlbum(String data) {
 
         String r = data.substring("/getAlbum".length());
         String[] split = r.split(" ");
 
         String albumName = split[1];
 
-        AlbumCreate a = AlbumCreate.newBuilder().setName(albumName).build();
-        return Message.newBuilder().setType(Type.ALBUMGET).setAlbumCreate(a).build();
+        return Message.newBuilder().setType(Type.ALBUMGET).setAlbumName(albumName).build();
+    }*/
+
+    public static Message editAlbum(String data){
+        String r = data.substring("/editAlbum".length());
+        String[] split = r.split(" ");
+
+        String albumName = split[1];
+
+        return Message.newBuilder().setType(Type.ALBUMEDIT).setAlbumName(albumName).build();
     }
 
 }

@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        new Router(args[0], "127.0.0.1", 6002).start();
+        new Router(args[0], "localhost", 4321).start();
 
         Scanner sc = new Scanner(System.in);
         try (ZContext context = new ZContext();
