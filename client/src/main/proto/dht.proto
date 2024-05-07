@@ -1,5 +1,5 @@
 syntax = "proto3";
-package dht.messages;
+package org.messages.dht;
 option java_multiple_files = true;
 
 service DHTService {

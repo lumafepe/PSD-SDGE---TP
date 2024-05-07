@@ -1,6 +1,7 @@
 package org.client.crdts.base;
 
-import client.p2p.OperationMessage;
+import org.messages.p2p.OperationMessage;
+import org.messages.p2p.VectorClock;
 
 import java.io.*;
 import java.util.HashSet;
@@ -48,7 +49,7 @@ public class Operation implements Serializable {
             this.versionVector = new VersionVector(om.getVectorClock().getNodeId(), om.getVectorClock().getCounter());
 
         this.observed = new HashSet<>();
-        for (client.p2p.VectorClock vectorClock : om.getObservedList()) {
+        for (VectorClock vectorClock : om.getObservedList()) {
             this.observed.add(new VersionVector(vectorClock.getNodeId(), (int)vectorClock.getCounter()));
         }
 
@@ -72,7 +73,7 @@ public class Operation implements Serializable {
             builder.setElement(element);
 
         if (this.versionVector != null) {
-            builder.setVectorClock(client.p2p.VectorClock.newBuilder()
+            builder.setVectorClock(VectorClock.newBuilder()
                     .setCounter(this.versionVector.counter)
                     .setNodeId(this.versionVector.nodeId)
                     .build());
@@ -80,7 +81,7 @@ public class Operation implements Serializable {
 
         if (observed != null) {
             for (VersionVector versionVector : observed) {
-                builder.addObserved(client.p2p.VectorClock.newBuilder()
+                builder.addObserved(VectorClock.newBuilder()
                         .setNodeId(versionVector.nodeId)
                         .setCounter(versionVector.counter)
                         .build());

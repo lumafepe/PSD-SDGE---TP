@@ -1,6 +1,6 @@
 package org.client.crdts;
 
-import client.p2p.OperationMessage;
+import org.messages.p2p.OperationMessage;
 import org.client.crdts.base.Operation;
 
 import java.util.HashMap;

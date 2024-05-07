@@ -1,7 +1,6 @@
 package org.client.controllers;
 
-import client.central.Login;
-import client.central.Type;
+import org.messages.central.*;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -13,18 +12,18 @@ import java.util.List;
 public class ServerController {
 
     private static final List<String> operations = Arrays.asList(
-            "register", "login", "logout", "listAlbums", "createAlbum", "getAlbum");
+            "/register", "/login", "/logout", "/listAlbums", "/createAlbum", "/getAlbum");
 
     private Socket serverSocket = null;
 
     public ServerController(String address, int port) {
-        try {
+        /*try {
             this.serverSocket = new Socket(address, port);
         }
         catch (IOException e) {
             e.printStackTrace(); // todo: replace with logger call
             System.exit(1);
-        }
+        }*/
     }
 
     public boolean handles(String data) {
@@ -36,7 +35,7 @@ public class ServerController {
         return false;
     }
 
-    public client.central.Message handle(String data) {
+    public Message handle(String data) {
 
         if (data.startsWith("/register")) {
             return this.send(ServerOperations.register(data));
@@ -62,10 +61,12 @@ public class ServerController {
             return this.send(ServerOperations.getAlbum(data));
         }
 
+        // TODO: editMessage
+
         return null;
     }
 
-    public client.central.Message send(client.central.Message message) {
+    public Message send(Message message) {
 
         try {
             this.serverSocket.getOutputStream().write(message.toByteArray());
@@ -73,7 +74,7 @@ public class ServerController {
             byte[] buffer = new byte[16384]; // todo: dynamic buffer size ?
             int read = this.serverSocket.getInputStream().read(buffer);
 
-            return client.central.Message.parseFrom(ByteBuffer.wrap(buffer, 0, read));
+            return Message.parseFrom(ByteBuffer.wrap(buffer, 0, read));
         }
         catch (IOException e) {
             e.printStackTrace(); // todo: replace with logger call

@@ -1,4 +1,4 @@
 package org.client.utils;
 
-public record IncomingMessage(byte[] identity, String data) {
+public record IncomingMessage(byte[] identity, byte[] data) {
 }

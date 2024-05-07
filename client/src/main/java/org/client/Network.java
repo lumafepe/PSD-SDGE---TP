@@ -1,6 +1,6 @@
 package org.client;
 
-import client.central.Message;
+import org.messages.central.Message;
 import org.client.utils.IncomingMessage;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
@@ -38,7 +38,7 @@ public class Network {
 
     public void loopSend(byte[] data) {
         for (String identity : this.users) {
-            router.sendMore(identity);
+            router.sendMore(identity.getBytes());
             router.sendMore("");
             router.send(data, 0);
         }
@@ -54,7 +54,7 @@ public class Network {
     public void removeUser(String user) {
         boolean removed = this.users.remove(user);
         if (removed) {
-            this.router.disconnect(user);
+            this.router.disconnect(Network.BASE_ADDRESS + user);
         }
     }
 
@@ -68,6 +68,6 @@ public class Network {
         this.router.recv(0); // discard message delimiter
         byte[] data = this.router.recv(0);
 
-        return new IncomingMessage(identity, new String(data));
+        return new IncomingMessage(identity, data);
     }
 }

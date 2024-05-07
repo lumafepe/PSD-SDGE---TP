@@ -1,9 +1,11 @@
-package org.client.threads;
+/*package org.client.threads;
 
-import client.central.*;
-import client.p2p.*;
+import org.messages.central.*;
+import org.messages.p2p.*;
+
 import org.client.BroadcastMessage;
 import org.client.Broadcaster;
+import org.client.crdts.Album;
 import org.client.crdts.base.Operation;
 import org.client.crdts.GOSet;
 import org.client.crdts.ORset;
@@ -255,7 +257,7 @@ public class Controller extends Thread {
                 }
                 causalBroadcast.receive(messageReceived);
                 //OperationMessage operationReceived = OperationMessage.parseFrom(request);
-                //System.out.println(operationReceived);
+                //System.out.println(operationReceived);*/
                 /*Operation o = messageReceived.operation();
 
                 if (o.operation.equals("addFile")){
@@ -280,7 +282,7 @@ public class Controller extends Thread {
                 }
                 else if (o.operation.equals("chat")){
                     System.out.println("Received Operation from other client: " + o);
-                }*/
+                }*//*
             }
 
         }
@@ -316,4 +318,4 @@ public class Controller extends Thread {
         }
         return null;
     }
-}
+}*/

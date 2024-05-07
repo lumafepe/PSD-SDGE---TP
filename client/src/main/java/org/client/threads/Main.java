@@ -1,27 +1,20 @@
 package org.client.threads;
 
-import org.client.Threads.Controller;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
-import java.io.IOException;
 import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        Controller c = null;
-        try {
-            c = new Controller(args[0]);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        c.start();
+        new Router(args[0], "127.0.0.1", 6002).start();
 
         Scanner sc = new Scanner(System.in);
         try (ZContext context = new ZContext();
              ZMQ.Socket sendCommand = context.createSocket(SocketType.REQ)) {
             sendCommand.connect("tcp://localhost:" + args[0]);
+            sendCommand.setIdentity("main".getBytes());
             while (sc.hasNextLine()) {
                 String line = sc.nextLine();
                 System.out.println("Send line to controller: " + line);

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package client.p2p;
+package org.messages.p2p;
 option java_multiple_files = true;
 
 message OperationMessage {

@@ -1,10 +1,10 @@
 package org.client.controllers;
 
-import client.central.*;
+import org.messages.central.*;
 
 public class ServerOperations {
 
-    public static client.central.Message register(String data) {
+    public static Message register(String data) {
 
         String r = data.substring("/register".length());
         String[] split = r.split(" ");
@@ -16,7 +16,7 @@ public class ServerOperations {
         return Message.newBuilder().setType(Type.REGISTER).setRegister(reg).build();
     }
 
-    public static client.central.Message login(String data) {
+    public static Message login(String data) {
 
         String r = data.substring("/login".length());
         String[] split = r.split(" ");
@@ -28,15 +28,15 @@ public class ServerOperations {
         return Message.newBuilder().setType(Type.LOGIN).setLogin(l).build();
     }
 
-    public static client.central.Message logout(String data) {
+    public static Message logout(String data) {
         return Message.newBuilder().setType(Type.LOGOUT).build();
     }
 
-    public static client.central.Message listAlbums(String data) {
+    public static Message listAlbums(String data) {
         return Message.newBuilder().setType(Type.ALBUMSLIST).build();
     }
 
-    public static client.central.Message createAlbum(String data) {
+    public static Message createAlbum(String data) {
 
         String r = data.substring("/createAlbum".length());
         String[] split = r.split(" ");
@@ -47,7 +47,7 @@ public class ServerOperations {
         return Message.newBuilder().setType(Type.ALBUMCREATE).setAlbumCreate(a).build();
     }
 
-    public static client.central.Message getAlbum(String data) {
+    public static Message getAlbum(String data) {
 
         String r = data.substring("/getAlbum".length());
         String[] split = r.split(" ");
