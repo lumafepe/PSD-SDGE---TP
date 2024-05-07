@@ -23,6 +23,11 @@ getAlbumFiles(Msg) ->
 getDHTToken(Msg) ->
     maps:get(token,Msg).
 
+getLeaveClock(Msg) ->
+    maps:get(clock,maps:get(leave_data,Msg)).
+getLeavePosition(Msg) ->
+    maps:get(position,maps:get(leave_data,Msg)).
+
 
 % processo em loop à espera de pedidos do user
 loop(Socket,Username) ->
@@ -34,10 +39,8 @@ loop(Socket,Username) ->
                 'ALBUMSLIST' -> albumsListHandler(Socket, Username);
                 'LOGOUT' -> logoutHandler(Socket, Username);
                 'ALBUMCREATE' -> albumCreateHandler(Socket,Username,getAlbumName(Msg));
-                'ALBUMEDIT' -> albumEditHandler(Socket,Username,getAlbumName(Msg));
-                'ISLAST' -> albumIsLastHandler(Socket,Username,getAlbumName(Msg));
-                'UPDATE' -> albumUpdateHandler(Socket,Username,getAlbumName(Msg),getAlbumUsernames(Msg),getAlbumFiles(Msg));
-                'LEAVE' -> albumLeaveHandler(Socket,Username,maps:get(name,maps:get(leave_data,Msg)),maps:get(clock,maps:get(leave_data,Msg)),maps:get(position,maps:get(leave_data,Msg)));
+                'ALBUMEDIT' -> albumEditHandler(Socket,Username,getAlbumName(Msg));     
+                'LEAVE' -> albumLeaveHandler(Socket,Username,getAlbumName(Msg),getLeaveClock(Msg),getLeavePosition(Msg),getAlbumUsernames(Msg),getAlbumFiles(Msg));
                 'READ' -> readHandler(Socket,Username,getDHTToken(Msg));
                 'WRITE' -> writeHandler(Socket,Username,getDHTToken(Msg))
             end;
@@ -97,37 +100,9 @@ albumEditHandler(Socket,Username,Name) ->
             loop(Socket,Username)
     end.
 
-albumIsLastHandler(Socket,Username,Name) ->
-    io:fwrite("Starting leaving process: album:~p user:~p.\n", [Name,Username]),
-    case albums_manager:isLast(Username,Name) of
-        {error, ErrorMsg} ->
-            io:fwrite("~p ~p.\n", [ErrorMsg, Name]),
-            answer_manager:errorReply(Socket,ErrorMsg),
-            loop(Socket,Username);
-        Value ->
-            io:fwrite("client leaving album:~p is_last ~p.\n", [Name,Value]),
-            answer_manager:is_last(Socket,Value),
-            loop(Socket,Username)
-    end.
-
-
-albumUpdateHandler(Socket,Username,Name,Users,Files) ->
-    io:fwrite("Updating information in server for album: album:~p user:~p.\n", [Name,Username]),
-    case albums_manager:update(Username,Name,Files,Users) of
-        {error, ErrorMsg} ->
-            io:fwrite("~p ~p.\n", [ErrorMsg, Name]),
-            answer_manager:errorReply(Socket,ErrorMsg),
-            loop(Socket,Username);
-        _ ->
-            io:fwrite("Updated Album: ~p.\n", [Name]),
-            answer_manager:success(Socket),
-            loop(Socket,Username)
-    end.
-
-
-albumLeaveHandler(Socket,Username,Name,Clock,Position) ->
+albumLeaveHandler(Socket,Username,Name,Clock,Position,Users,Files) ->
     io:fwrite("Finishing leaving process: album:~p user:~p.\n", [Name,Username]),
-    case albums_manager:leave(Username,Name,Clock,Position) of
+    case albums_manager:leave(Username,Name,Clock,Position,Users,Files) of
         {error, ErrorMsg} ->
             io:fwrite("~p ~p.\n", [ErrorMsg, Name]),
             answer_manager:errorReply(Socket,ErrorMsg),

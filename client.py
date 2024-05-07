@@ -70,21 +70,6 @@ def write(token):
     message.token = token
     return message
 
-def isLast(name):
-    message = getSimpleMessage(Messages.Type.ISLAST)
-    message.album_name = name
-    return message
-
-def leave(name,clock,position):
-    data = Messages.LeaveData()
-    data.name = name
-    data.clock = clock
-    data.position = position
-    
-    message = getSimpleMessage(Messages.Type.LEAVE)
-    message.leave_data.CopyFrom(data)
-    return message
-
 
 def classification(user,grade):
     classification = Messages.Classification()
@@ -102,7 +87,7 @@ def file(name,hash,classifications):
     file.classifications.extend(c)
     return file
 
-def update(name,files,users):
+def leave(name,clock,position,files,users):
     album = Messages.Album()
     album.users.extend(users)
     f=[]
@@ -110,7 +95,12 @@ def update(name,files,users):
         f.append(file(n,h,c))
     album.files.extend(f)
     
-    message = getSimpleMessage(Messages.Type.UPDATE)
+    data = Messages.LeaveData()
+    data.clock = clock
+    data.position = position
+    
+    message = getSimpleMessage(Messages.Type.LEAVE)
+    message.leave_data.CopyFrom(data)
     message.album_name = name
     message.album.CopyFrom(album)
     return message
@@ -150,12 +140,8 @@ try:
         sendAndRecieve(sock,album_list())
         print("album_edit")
         sendAndRecieve(sock,album_edit("F1"))
-        print("isLast")
-        sendAndRecieve(sock,isLast("F1"))
-        print("update")
-        sendAndRecieve(sock,update("F1",[("perdi",toHash("136e3cf1ab6a4dc9cd25784ffe7ab05af45d9f77"),[("123",10)]),("perdi2",toHash("136e3cf1ab6a4dc9cd25784ffe7ab05af45d9f77"),[("123",10)])],["123","MAX"]))
         print("leave")
-        sendAndRecieve(sock,leave("F1",10,0))
+        sendAndRecieve(sock,leave("F1",10,0,[("perdi",toHash("136e3cf1ab6a4dc9cd25784ffe7ab05af45d9f77"),[("123",10)]),("perdi2",toHash("136e3cf1ab6a4dc9cd25784ffe7ab05af45d9f77"),[("123",10)])],["123","MAX"]))
         print("logout")
         sendAndRecieve(sock,logout())
         print("login")
