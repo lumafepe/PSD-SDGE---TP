@@ -42,10 +42,8 @@ enum Type {
   WRITE = 14; // C2S -> token | { ERRORREPLY | NODEIP }
   NODEIP = 15; // S2C -> nodes_ips
   NEWCLIENT = 16; // S2C -> new_client
-  ISLASTREPLY = 17; // S2C -> is_last
-  ISLAST = 18; // C2S -> album_name | {ERRORREPLY | ISLASTREPLY}
-  LEAVE = 19; // C2S -> leave_data | {ERRORREPLY | SUCESIUM}
-  UPDATE = 20; // C2S -> {album_name & album} | {ERRORREPLY | SUCESIUM}
+  LEAVE = 19; // C2S -> {leave_data & album_name & album} | {ERRORREPLY | SUCESIUM}
+  EDITING = 20; // C2S -> album_name | {ERRORREPLY | SUCESIUM}
 }
 
 message UserData {
@@ -86,9 +84,8 @@ message NewClient {
 }
 
 message LeaveData {
-  string name = 1;
-  uint32 clock = 2;
-  uint32 position =3; 
+  uint32 clock = 1;
+  uint32 position =2; 
 }
 
 message Album {
