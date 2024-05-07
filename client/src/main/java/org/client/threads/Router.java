@@ -31,6 +31,7 @@ public class Router extends Thread {
         this.network.addUser("6001");
         this.network.removeUser(bindPort);
         this.operations = Album.getInstance();
+        this.operations.setNodeId(bindPort);
         this.broadcaster = new Broadcaster(this.network, 0, 0);
 
         this.server = new ServerController(serverAddress, serverPort);
@@ -42,7 +43,7 @@ public class Router extends Thread {
         if (this.server.handles(messageData)) {
             Message reply = this.server.handle(messageData);
 
-            if (reply != null)
+            if (reply != null){
                 if (reply.getType() == Type.ALBUM){
                     org.messages.central.Album album = reply.getAlbum();
 
@@ -51,20 +52,24 @@ public class Router extends Thread {
                     for (String u : album.getUsersList()){
                         users.add(u);
                     }
-                    operations.setUsers(users);
+                    operations.setUsers(users, bindPort);
 
                     // Get files
                     List<File> files = new ArrayList<>();
                     for (File f : album.getFilesList()){
                         files.add(f);
                     }
-                    operations.setFiles(files);
+                    operations.setFiles(files, bindPort);
                 }
+
                 this.network.self(message.identity(), reply);
-            // todo: else log that an unknow operation has been sent
+                // todo: else log that an unknow operation has been sent
+            }
         }
         else if (this.peerController.handles(messageData)){
             this.peerController.handle(messageData);
+            Message m = Message.newBuilder().build();
+            this.network.self(message.identity(), m);
         }
         else {
             this.peerController.handleIncoming(message.data());

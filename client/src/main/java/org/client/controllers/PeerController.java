@@ -2,6 +2,7 @@ package org.client.controllers;
 
 import org.client.BroadcastMessage;
 import org.client.Broadcaster;
+import org.client.crdts.Album;
 import org.client.crdts.base.Operation;
 import org.messages.central.Message;
 
@@ -11,8 +12,9 @@ import java.util.List;
 
 public class PeerController {
     private static final List<String> operations = Arrays.asList(
-            "/addFile", "/removeFile", "/addUser", "/removeUser", "/chat");
+            "/addFile", "/removeFile", "/addUser", "/removeUser", "/chat", "/showAlbum");
     private Broadcaster broadcaster;
+    private final Album crdts = Album.getInstance();
 
     public PeerController(Broadcaster broadcaster) {
         // todo: add network for self operations
@@ -28,22 +30,63 @@ public class PeerController {
         return false;
     }
 
-    public Message handle(String data) {
+    public void handle(String data) {
 
         if (data.startsWith("/addFile")) {
+            String rest = data.substring("/addFile".length());
+            String[] restSplit = rest.split(" ");
+            String fileName = restSplit[1];
+            String content = restSplit[2];
 
+            Operation o = new Operation("addFile", fileName);
+            Operation newOp = crdts.handleOperation(o);
+
+            try {
+                broadcaster.broadcast(newOp);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        if (data.startsWith("/addFile")) {
+        if (data.startsWith("/removeFile")) {
+            String rest = data.substring("/removeFile".length());
+            String[] restSplit = rest.split(" ");
+            String fileName = restSplit[1];
 
+            Operation o = new Operation("removeFile", fileName);
+            Operation newOp = crdts.handleOperation(o);
+
+            try {
+                broadcaster.broadcast(newOp);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         if (data.startsWith("/addUser")) {
-
+            String userName = data.substring("/addUser ".length());
+            try {
+                Operation o = new Operation("addUser", userName);
+                Operation newOp = crdts.handleOperation(o);
+                broadcaster.broadcast(newOp);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         if (data.startsWith("/removeUser")) {
+            String userName = data.substring("/removeUser ".length());
+            try {
+                Operation o = new Operation("removeUser", userName);
+                Operation newOp = crdts.handleOperation(o);
+                broadcaster.broadcast(newOp);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
+        if (data.startsWith("/showAlbum")){
+            System.out.println(crdts.toString());
         }
 
         if (data.startsWith("/chat")) {
@@ -54,8 +97,6 @@ public class PeerController {
                 throw new RuntimeException(e);
             }
         }
-
-        return null;
     }
 
     public void handleIncoming(byte[] data) {

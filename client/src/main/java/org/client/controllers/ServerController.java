@@ -61,8 +61,12 @@ public class ServerController {
             //return this.send(ServerOperations.getAlbum(data));
         }
 
-        if (data.startsWith("/edit")) {
+        if (data.startsWith("/editAlbum")) {
             return this.send(ServerOperations.editAlbum(data));
+        }
+
+        if (data.startsWith("/leaveAlbum")){
+            return this.send(ServerOperations.leaveAlbum(data));
         }
 
         return null;

@@ -62,7 +62,19 @@ public class ServerOperations {
 
         String albumName = split[1];
 
-        return Message.newBuilder().setType(Type.ALBUMEDIT).setAlbumName(albumName).build();
+        Message m = Message.newBuilder().setType(Type.ALBUMEDIT).setAlbumName(albumName).build();
+        return m;
+    }
+
+    public static Message leaveAlbum(String data){
+        String r = data.substring("/leaveAlbum".length());
+        String[] split = r.split(" ");
+
+        String albumName = split[1];
+
+        Message m = Message.newBuilder().setType(Type.LEAVE).setAlbumName(albumName).build();
+        // todo: get metadata
+        return m;
     }
 
 }

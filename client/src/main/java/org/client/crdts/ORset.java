@@ -24,6 +24,12 @@ public class ORset {
         return map.containsKey(element);
     }
 
+    public void insert(Object element, VersionVector vector){
+        HashSet<VersionVector> set = new HashSet<VersionVector>();
+        set.add(vector);
+        this.map.put(element, set);
+    }
+
     public Operation addElement(String operationName, String element, String id){
         counter += 1;
 
@@ -66,5 +72,9 @@ public class ORset {
         if (oldValue.size() == 0){
             map.remove(removeOperation.element);
         }
+    }
+
+    public String toString(){
+        return map.toString();
     }
 }
