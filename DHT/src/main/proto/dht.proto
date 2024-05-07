@@ -5,6 +5,7 @@ option java_multiple_files = true;
 service DHTService {
   rpc read(ReadRequest) returns (stream ReadResponse);
   rpc write(stream WriteRequest) returns (WriteResponse);
+  rpc transfer(TransferRequest) returns (stream WriteRequest);
   rpc echoMsg(Message) returns (Message);
 }
 
@@ -22,6 +23,12 @@ message ReadResponse {
   bool moreData = 3;
   int32 byteCount = 4;
   bytes data = 5;
+}
+
+message TransferRequest {
+  string ip = 1;
+  int32 port = 2;
+  repeated int64 token = 3;
 }
 
 message WriteRequest {

@@ -10,17 +10,21 @@ import java.util.Collections;
 import java.util.List;
 
 public class TokenGenerator {
-    public static List<Integer> generateTokens(int count, int mod) {
-        List<Integer> result = new ArrayList<>();
+    public static List<Long> generateTokens(int count, long mod) {
+        List<Long> result = new ArrayList<>();
 
         for(int i = 0; i < count; i++) {
             String sha1Hash = calculateSHA1(generateRandomData());
-            BigInteger integer = new BigInteger(sha1Hash, 16);
-            result.add(integer.mod(BigInteger.valueOf(mod)).intValue());
+            result.add(hashToRing(sha1Hash, mod));
         }
 
         Collections.sort(result);
         return result;
+    }
+
+    public static long hashToRing(String hash, long mod) {
+        BigInteger integer = new BigInteger(hash, 16);
+        return integer.mod(BigInteger.valueOf(mod)).longValue();
     }
 
     private static String calculateSHA1(String data) {

@@ -11,8 +11,8 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 public class DHTService extends Rx3DHTServiceGrpc.DHTServiceImplBase {
     private DHTController controller;
 
-    public DHTService() {
-        this.controller = new DHTController();
+    public DHTService(MetadataManager manager) {
+        this.controller = new DHTController(manager);
     }
 
     public Flowable<ReadResponse> read(Single<ReadRequest> request) {
@@ -26,6 +26,13 @@ public class DHTService extends Rx3DHTServiceGrpc.DHTServiceImplBase {
                 .map(this.controller::write)
                 .reduce(this.controller::mergeWriteResponses)
                 .toSingle();
+    }
+
+    public Flowable<WriteRequest> transfer(Single<TransferRequest> request) {
+        return request
+                .toFlowable()
+                .flatMap(this.controller::transfer)
+                .subscribeOn(Schedulers.io());
     }
 
     public Single<dht.messages.Message> echoMsg(Single<dht.messages.Message> msg) {
