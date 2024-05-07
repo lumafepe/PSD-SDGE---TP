@@ -10,4 +10,6 @@ RUN mvn install
 
 RUN mkdir -p /test_data
 
-ENTRYPOINT ["/usr/bin/mvn", "exec:java"]
+RUN mkdir -p /tmp/dht
+
+ENTRYPOINT ["/usr/bin/mvn", "exec:java","-Dexec.args=\"-c/config.yml\""]

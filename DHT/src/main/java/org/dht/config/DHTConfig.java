@@ -6,10 +6,15 @@ import java.io.File;
 
 public class DHTConfig {
 
+    private String address;
     private int port;
     private String baseDirectory;
     private int tokenCount;
     private long mod;
+
+    public String getAddress() {
+        return address;
+    }
 
     public int getPort() {
         return port;
@@ -25,6 +30,10 @@ public class DHTConfig {
 
     public int getTokenCount() {
         return tokenCount;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     public void setPort(int port) {

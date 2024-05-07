@@ -24,6 +24,7 @@ public class DHTController {
     }
 
     public Flowable<WriteRequest> transfer(TransferRequest request) {
+        logger.info("transfer request");
         return Flowable.create(sub -> {
             metadataManager.serverIsEntering(new InetSocketAddress(request.getIp(), request.getPort()), request.getTokenList());
             Queue<String> hashesToTransfer = hashesToTransfer(request.getTokenList());
@@ -44,7 +45,6 @@ public class DHTController {
                         offset += read;
                         read = file.read(buffer);
                     }
-                    sub.onComplete();
 
                 } catch(IOException e) {
                     logger.error("An exception occurred: ", e);
@@ -54,6 +54,7 @@ public class DHTController {
 
                 hashesToTransfer.remove();
             }
+            sub.onComplete();
         }, BackpressureStrategy.BUFFER);
     }
 

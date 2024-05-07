@@ -29,9 +29,5 @@ public class ServerConfig {
         if (this.port <= 0 || this.port >= 65535) {
             throw new InvalidConfigurationFileException("server.port '" + this.port + "' value must be between 0 and 65535");
         }
-
-        if (!InetAddresses.isInetAddress(this.address)) {
-            throw new InvalidConfigurationFileException("server.address '" + this.address + "' is not a valid ipv4 address");
-        }
     }
 }

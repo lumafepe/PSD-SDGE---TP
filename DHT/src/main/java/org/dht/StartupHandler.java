@@ -31,6 +31,7 @@ public class StartupHandler implements Runnable {
         logger.info("Announcing entry");
         List<NodeInfo> nodes = announceEntry();
         logger.info("Entry announced. Computing servers to contact");
+        System.out.println(nodes);
         Map<Long, InetSocketAddress> serversToContact = computeServersToCopyFrom(nodes);
         logger.info("Transferring data");
         copyData(serversToContact);
@@ -45,7 +46,7 @@ public class StartupHandler implements Runnable {
                             .setNodeInfo(NodeInfo.newBuilder()
                                     .addAllTokens(metadataManager.getMyTokens())
                                     .setPort(ConfigManager.getInstance().getConfig().getDht().getPort())
-                                    .setIp("127.0.0.1") //TODO: Fix
+                                    .setIp(ConfigManager.getInstance().getConfig().getDht().getAddress())
                                     .build())
                             .build());
 
@@ -54,7 +55,7 @@ public class StartupHandler implements Runnable {
             logger.error("Node already connecting. Retrying in 60 seconds");
             
             try {
-                Thread.sleep(60000);
+                Thread.sleep(1000);
             } catch(InterruptedException e){}
 
             return announceEntry();
@@ -65,9 +66,9 @@ public class StartupHandler implements Runnable {
     private Map<Long, InetSocketAddress> computeServersToCopyFrom(List<NodeInfo> nodeInfos) {
         Map<Long, InetSocketAddress> tokenServerMapping = new HashMap<>();
         TreeSet<Long> serverTokens = new TreeSet<>();
-
         processNodes(nodeInfos, tokenServerMapping, serverTokens);
-        return computeServersToCopyFrom(tokenServerMapping, serverTokens);
+        if (serverTokens.isEmpty()) return new HashMap<>();
+        else return computeServersToCopyFrom(tokenServerMapping, serverTokens);
     }
 
     private Map<Long, InetSocketAddress> computeServersToCopyFrom(Map<Long, InetSocketAddress> tokenServerMapping,
@@ -89,9 +90,10 @@ public class StartupHandler implements Runnable {
                               Map<Long, InetSocketAddress> tokenServerMapping, TreeSet<Long> serverTokens) {
 
         for(NodeInfo node : nodeInfos) {
-            //TODO: Generalize
-            if(node.getPort() == ConfigManager.getInstance().getConfig().getDht().getPort())
+
+            if(node.getPort() == ConfigManager.getInstance().getConfig().getDht().getPort() && node.getIp().equals(ConfigManager.getInstance().getConfig().getDht().getAddress()) ){
                 continue;
+            }
 
             InetSocketAddress address = new InetSocketAddress(node.getIp(), node.getPort());
             List<Long> nodeTokens = new ArrayList<>();
@@ -114,9 +116,7 @@ public class StartupHandler implements Runnable {
             var channel = ManagedChannelBuilder.forAddress(server.getHostName(), server.getPort())
                     .usePlaintext()
                     .build();
-
             var stub = Rx3DHTServiceGrpc.newRxStub(channel);
-
             stub.transfer(Single.just(TransferRequest.newBuilder()
                             .addAllToken(metadataManager.getMyTokens())
                             .build())
@@ -131,7 +131,7 @@ public class StartupHandler implements Runnable {
                 .setNodeInfo(NodeInfo.newBuilder()
                         .addAllTokens(metadataManager.getMyTokens())
                         .setPort(ConfigManager.getInstance().getConfig().getDht().getPort())
-                        .setIp("127.0.0.1") //TODO: Fix
+                        .setIp(ConfigManager.getInstance().getConfig().getDht().getAddress())
                         .build())
                 .build());
     }
@@ -139,8 +139,7 @@ public class StartupHandler implements Runnable {
     private Message send(Message msg) {
         Logger logger = LogManager.getLogger();
 
-        //TODO: Change
-        try (Socket clientSocket = new Socket("127.0.0.1", 4321)) {
+        try (Socket clientSocket = new Socket(ConfigManager.getInstance().getConfig().getServer().getAddress() , ConfigManager.getInstance().getConfig().getServer().getPort())) {
             clientSocket.getOutputStream().write(msg.toByteArray());
             byte[] buffer = new byte[1048576];
             int read = clientSocket.getInputStream().read(buffer);
