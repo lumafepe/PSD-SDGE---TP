@@ -25,6 +25,7 @@ getDHTToken(Msg) ->
 
 getLeaveClock(Msg) ->
     maps:get(clock,maps:get(leave_data,Msg)).
+    
 getLeavePosition(Msg) ->
     maps:get(position,maps:get(leave_data,Msg)).
 

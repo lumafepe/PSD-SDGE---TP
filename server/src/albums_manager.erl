@@ -46,10 +46,11 @@ getOnline(Users) ->
 
 
 
-getUsersAdded(Old,New) ->
-    sets:subtract(New,Old).
 getUsersRemoved(Old,New) ->
+    sets:subtract(New,Old).
+getUsersAdded(Old,New) ->
     sets:subtract(Old,New).
+
 addAlbumToUsers(AlbumName,Users,AccessesByPerson) ->
     sets:fold(
         fun(U,Acc) ->
