@@ -1,4 +1,4 @@
-package org.client.controllers;
+package org.client.controllers.peers;
 
 import org.client.crdts.Album;
 import org.client.crdts.CRDTS;

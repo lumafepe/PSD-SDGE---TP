@@ -1,19 +1,18 @@
 package org.client.threads;
 
-import org.client.controllers.PeerManagementController;
+import org.client.controllers.peers.PeerManagementController;
 import org.client.messages.ClientMessage;
-import org.client.controllers.PeerController;
+import org.client.controllers.peers.PeerController;
 import org.client.crdts.CRDTS;
 import org.messages.central.*;
 import org.client.utils.IncomingMessage;
 import org.client.crdts.Album;
 import org.client.network.Broadcaster;
 import org.client.network.Network;
-import org.client.controllers.ServerController;
+import org.client.controllers.server.ServerController;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 public class Router extends Thread {
 

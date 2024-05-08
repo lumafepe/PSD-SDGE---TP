@@ -1,4 +1,4 @@
-package org.client.controllers;
+package org.client.controllers.peers;
 
 import org.client.network.Broadcaster;
 import org.client.messages.ClientMessage;

@@ -1,4 +1,4 @@
-package org.client.controllers;
+package org.client.controllers.server;
 
 import org.client.crdts.Album;
 import org.messages.central.*;
