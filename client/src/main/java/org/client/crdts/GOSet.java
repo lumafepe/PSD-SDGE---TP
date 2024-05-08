@@ -1,12 +1,13 @@
 package org.client.crdts;
 
 import org.client.crdts.base.Operation;
+import org.client.crdts.records.Rating;
 
 import java.io.Serializable;
 import java.util.HashSet;
 
 public class GOSet implements Serializable {
-    private HashSet<Rating> ratings;
+    private final HashSet<Rating> ratings;
 
     public GOSet() {
         ratings = new HashSet<>();
@@ -28,7 +29,7 @@ public class GOSet implements Serializable {
 
     public void applyAddRatingOperation(Operation operation){
         for (Rating rating : ratings) {
-            if (rating.fileName.equals(operation.fileName) && rating.user.equals(operation.user)) {
+            if (rating.fileName().equals(operation.fileName) && rating.user().equals(operation.user)) {
                 return;
             }
         }
