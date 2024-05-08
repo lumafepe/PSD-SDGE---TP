@@ -2,6 +2,7 @@ package org.client.controllers;
 
 import org.client.BroadcastMessage;
 import org.client.Broadcaster;
+import org.client.ClientMessage;
 import org.client.crdts.Album;
 import org.client.crdts.base.Operation;
 import org.messages.central.Message;
@@ -101,17 +102,21 @@ public class PeerController {
         }
     }
 
-    public void handleIncoming(byte[] data) {
-        BroadcastMessage messageReceived;
+    public ClientMessage handleIncoming(byte[] data) {
+        ClientMessage messageReceived;
 
         try {
-            messageReceived = BroadcastMessage.fromBytes(data);
+            messageReceived = ClientMessage.fromBytes(data);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
 
-        broadcaster.receive(messageReceived);
+        if (!messageReceived.type().equals("join") && !messageReceived.type().equals("forward")) {
+            broadcaster.receive(messageReceived.message());
+        }
+
+        return messageReceived;
     }
 }

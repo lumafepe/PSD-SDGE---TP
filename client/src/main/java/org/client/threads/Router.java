@@ -1,6 +1,11 @@
 package org.client.threads;
 
+import org.client.BroadcastMessage;
+import org.client.ClientMessage;
 import org.client.controllers.PeerController;
+import org.client.crdts.CRDTS;
+import org.client.crdts.base.Operation;
+import org.client.utils.VectorClock;
 import org.messages.central.*;
 import org.client.utils.IncomingMessage;
 import org.client.crdts.Album;
@@ -8,6 +13,7 @@ import org.client.Broadcaster;
 import org.client.Network;
 import org.client.controllers.ServerController;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,9 +33,9 @@ public class Router extends Thread {
         this.bindPort = bindPort;
 
         this.network = new Network(this.bindPort, new ArrayList<>());
-        this.network.addUser("6000");
-        this.network.addUser("6001");
-        this.network.removeUser(bindPort);
+        // this.network.addUser("6000");
+        // this.network.addUser("6001");
+        // this.network.removeUser(bindPort);
         this.operations = Album.getInstance();
         this.operations.setNodeId(bindPort);
         this.broadcaster = new Broadcaster(this.network, 0, 0);
@@ -44,6 +50,7 @@ public class Router extends Thread {
             Message reply = this.server.handle(messageData);
 
             if (reply != null){
+                // When he is the first in the session
                 if (reply.getType() == Type.ALBUM){
                     AlbumMessage album = reply.getAlbum();
 
@@ -62,6 +69,29 @@ public class Router extends Thread {
                     operations.setFiles(files, bindPort);
                 }
 
+                // When he is not the first in the session
+                if (reply.getType() == Type.NEWCLIENT){
+                    NewClient newClientPart = reply.getNewClient();
+
+                    int vectorPosition = newClientPart.getPosition();
+                    int vectorInitialValue = newClientPart.getClock();
+                    List<Client> clients = newClientPart.getClientsList();
+                    Client mediator = clients.get(0);
+
+                    for (Client client : clients){
+                        this.network.addUser(String.valueOf(client.getPort()));
+                    }
+
+                    ClientMessage bMessage = new ClientMessage("join", null, null, bindPort);
+                    try {
+                        this.network.send(bMessage.asBytes(), String.valueOf(mediator.getPort()));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    this.broadcaster = new Broadcaster(this.network, vectorPosition, vectorInitialValue);
+                }
+
                 this.network.self(message.identity(), reply);
                 // todo: else log that an unknow operation has been sent
             }
@@ -72,17 +102,35 @@ public class Router extends Thread {
             this.network.self(message.identity(), m);
         }
         else {
-            this.peerController.handleIncoming(message.data());
+            ClientMessage incMessage = this.peerController.handleIncoming(message.data());
+            if (incMessage.type().equals("join")){
+                String newPeerIdentity = (String) incMessage.identity();
+                this.network.addUser(newPeerIdentity);
+                try {
+                    ClientMessage bMessage = new ClientMessage("state", null, operations.getCrdts(), bindPort);
+                    this.network.send(operations.asBytes(), newPeerIdentity);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if (incMessage.type().equals("state")){
+                CRDTS crdts = incMessage.crdts();
+                this.operations.setCrdts(crdts);
+            }
         }
 
     }
 
     public void run() {
-
-        while (true) {
-            IncomingMessage message = this.network.recv();
-            System.out.println("received from client " + new String(message.identity()));
-            this.routeMessage(message);
+        try {
+            while (true) {
+                IncomingMessage message = this.network.recv();
+                System.out.println("received from client " + new String(message.identity()));
+                this.routeMessage(message);
+            }
+        } catch (Exception e){
+            IncomingMessage m = new IncomingMessage("".getBytes(), "/logout".getBytes());
         }
     }
 }

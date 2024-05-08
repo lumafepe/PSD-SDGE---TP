@@ -44,6 +44,12 @@ public class Network {
         }
     }
 
+    public void send(byte[] data, String identity) {
+        router.sendMore(identity.getBytes());
+        router.sendMore("");
+        router.send(data, 0);
+    }
+
     public void addUser(String user) {
         if (!this.users.contains(user)) {
             this.users.add(user);

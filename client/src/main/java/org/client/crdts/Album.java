@@ -1,5 +1,6 @@
 package org.client.crdts;
 
+import org.client.BroadcastMessage;
 import org.client.crdts.base.VersionVector;
 import org.messages.central.AlbumMessage;
 import org.messages.central.Classification;
@@ -7,6 +8,7 @@ import org.messages.central.File;
 import org.messages.p2p.OperationMessage;
 import org.client.crdts.base.Operation;
 
+import java.io.*;
 import java.util.*;
 
 @FunctionalInterface
@@ -18,9 +20,7 @@ public class Album {
 
     private static Album instance = null;
 
-    private GOSet fileRatingsCRDT = null;
-    private ORset<File> filesCRDT = null;
-    private ORset<String> usersCRDT = null;
+    private CRDTS crdts = new CRDTS();
 
     private String nodeId;
 
@@ -30,19 +30,19 @@ public class Album {
         instance = this;
 
         operationHandlers.put("addFile", (o) -> {
-            return filesCRDT.addElement(o.operation, ((Operation<File>)o).element, nodeId);
+            return crdts.filesCRDT.addElement(o.operation, ((Operation<File>)o).element, nodeId);
         });
 
         operationHandlers.put("removeFile", (o) -> {
-            return filesCRDT.removeElement(o.operation, ((Operation<File>)o).element);
+            return crdts.filesCRDT.removeElement(o.operation, ((Operation<File>)o).element);
         });
 
         operationHandlers.put("addUser", (o) -> {
-            return usersCRDT.addElement(o.operation, ((Operation<String>)o).element, nodeId);
+            return crdts.usersCRDT.addElement(o.operation, ((Operation<String>)o).element, nodeId);
         });
 
         operationHandlers.put("removeUser", (o) -> {
-            return usersCRDT.removeElement(o.operation, ((Operation<String>)o).element);
+            return crdts.usersCRDT.removeElement(o.operation, ((Operation<String>)o).element);
         });
 
         operationHandlers.put("rate", (o) -> {
@@ -70,43 +70,51 @@ public class Album {
     } // todo: this is not right!
 
     public void setFileRatingsCRDT(GOSet fileRatingsCRDT) {
-        this.fileRatingsCRDT = fileRatingsCRDT;
+        this.crdts.fileRatingsCRDT = fileRatingsCRDT;
     }
 
     public void setFilesCRDT(ORset filesCRDT) {
-        this.filesCRDT = filesCRDT;
+        this.crdts.filesCRDT = filesCRDT;
     }
 
     public void setUsers(List<String> users, String id){
-        this.usersCRDT = new ORset();
+        this.crdts.usersCRDT = new ORset();
         for (String user : users){
-            this.usersCRDT.insert(user, new VersionVector(id, 0));
+            this.crdts.usersCRDT.insert(user, new VersionVector(id, 0));
         }
 
         //this.usersCRDT.setUsers(users);
     }
 
     public void setFiles(List<File> files, String id){
-        this.filesCRDT = new ORset();
+        this.crdts.filesCRDT = new ORset();
         for (File file : files){
-            this.filesCRDT.insert(file, new VersionVector(id, 0));
+            this.crdts.filesCRDT.insert(file, new VersionVector(id, 0));
         }
     }
 
     public void setUsersCRDT(ORset usersCRDT) {
-        this.usersCRDT = usersCRDT;
+        this.crdts.usersCRDT = usersCRDT;
     }
 
     public GOSet getFileRatingsCRDT() {
-        return fileRatingsCRDT;
+        return crdts.fileRatingsCRDT;
     }
 
     public ORset getFilesCRDT() {
-        return filesCRDT;
+        return crdts.filesCRDT;
     }
 
     public ORset getUsersCRDT() {
-        return usersCRDT;
+        return crdts.usersCRDT;
+    }
+
+    public void setCrdts(CRDTS crdts){
+        this.crdts = crdts;
+    }
+
+    public CRDTS getCrdts(){
+        return crdts;
     }
 
     public void setNodeId(String nodeId){
@@ -114,12 +122,12 @@ public class Album {
     }
 
     public String toString(){
-        return this.usersCRDT.toString();
+        return this.crdts.usersCRDT.toString();
     }
 
     public AlbumMessage toAlbumMessage(){
         AlbumMessage.Builder b = AlbumMessage.newBuilder();
-        b.addAllUsers(usersCRDT.elements());
+        b.addAllUsers(crdts.usersCRDT.elements());
         ArrayList<File> files = new ArrayList<>();
         ArrayList<Classification> classifications = new ArrayList<>();
         classifications.add(Classification.newBuilder().setUsername("miguel").setValue(5).build());
@@ -130,5 +138,21 @@ public class Album {
                 .build());
         b.addAllFiles(files);
         return b.build();
+    }
+
+    public byte[] asBytes() throws IOException {
+
+        ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
+        ObjectOutputStream bytes = new ObjectOutputStream(byteArray);
+
+        bytes.writeObject(this.crdts);
+        return byteArray.toByteArray();
+    }
+
+    public static CRDTS fromBytes(byte[] payload) throws IOException, ClassNotFoundException {
+
+        ByteArrayInputStream byteIn = new ByteArrayInputStream(payload);
+        ObjectInputStream bytes = new ObjectInputStream(byteIn);
+        return (CRDTS) bytes.readObject();
     }
 }

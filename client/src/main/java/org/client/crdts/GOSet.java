@@ -3,9 +3,10 @@ package org.client.crdts;
 import org.client.Rating;
 import org.client.crdts.base.Operation;
 
+import java.io.Serializable;
 import java.util.HashSet;
 
-public class GOSet {
+public class GOSet implements Serializable {
     private HashSet<Rating> ratings;
 
     public GOSet() {

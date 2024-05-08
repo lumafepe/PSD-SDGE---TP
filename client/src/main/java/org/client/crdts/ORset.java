@@ -3,11 +3,12 @@ package org.client.crdts;
 import org.client.crdts.base.Operation;
 import org.client.crdts.base.VersionVector;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ORset<T> {
+public class ORset<T> implements Serializable {
     private HashMap<T, Set<VersionVector>> map;
     private int counter;
 
