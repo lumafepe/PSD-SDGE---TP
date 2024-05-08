@@ -89,6 +89,8 @@ public class PeerController {
             System.out.println(crdts.toString());
         }
 
+
+
         if (data.startsWith("/chat")) {
             String message = data.substring("/chat ".length());
             try {

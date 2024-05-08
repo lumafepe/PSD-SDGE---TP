@@ -1,6 +1,6 @@
 package org.client;
 
-import org.messages.central.Message;
+import org.messages.central.*;
 import org.client.utils.IncomingMessage;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;

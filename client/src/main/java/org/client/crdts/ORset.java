@@ -7,8 +7,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ORset {
-    private HashMap<Object, Set<VersionVector>> map;
+public class ORset<T> {
+    private HashMap<T, Set<VersionVector>> map;
     private int counter;
 
     public ORset(){
@@ -16,21 +16,21 @@ public class ORset {
         counter = 0;
     }
 
-    public Set<Object> elements(){
+    public Set<T> elements(){
         return map.keySet();
     }
 
-    public boolean contains(Object element){
+    public boolean contains(T element){
         return map.containsKey(element);
     }
 
-    public void insert(Object element, VersionVector vector){
-        HashSet<VersionVector> set = new HashSet<VersionVector>();
+    public void insert(T element, VersionVector vector){
+        HashSet<VersionVector> set = new HashSet<>();
         set.add(vector);
         this.map.put(element, set);
     }
 
-    public Operation addElement(String operationName, String element, String id){
+    public Operation addElement(String operationName, T element, String id){
         counter += 1;
 
         Operation operation = new Operation(operationName, element, new VersionVector(id, counter), map.get(element));
@@ -50,10 +50,10 @@ public class ORset {
                 oldValue.remove(toRemove);
 
         oldValue.add(addOperation.versionVector);
-        map.put(addOperation.element, oldValue);
+        map.put((T) addOperation.element, oldValue);
     }
 
-    public Operation removeElement(String operationName, String element){
+    public Operation removeElement(String operationName, T element){
         Operation operation = new Operation(operationName, element, null, map.get(element));
         applyRemoveOperation(operation);
         return operation;
@@ -68,7 +68,7 @@ public class ORset {
             for (Object toRemove : removeOperation.observed)
                 oldValue.remove(toRemove);
 
-        map.put(removeOperation.element, oldValue);
+        map.put((T) removeOperation.element, oldValue);
         if (oldValue.size() == 0){
             map.remove(removeOperation.element);
         }

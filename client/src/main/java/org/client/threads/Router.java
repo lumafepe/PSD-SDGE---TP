@@ -45,7 +45,7 @@ public class Router extends Thread {
 
             if (reply != null){
                 if (reply.getType() == Type.ALBUM){
-                    org.messages.central.Album album = reply.getAlbum();
+                    AlbumMessage album = reply.getAlbum();
 
                     // Get users
                     List<String> users = new ArrayList<>();

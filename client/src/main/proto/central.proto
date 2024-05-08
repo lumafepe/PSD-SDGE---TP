@@ -1,6 +1,7 @@
 syntax = "proto3";
 
-package protos;
+package org.messages.central;
+option java_multiple_files = true;
 
 message Message {
   Type type = 1;
@@ -8,7 +9,7 @@ message Message {
   optional ErrorReply error_message = 3;
   optional string album_name = 4;
   optional Albums albums = 5;
-  optional Album album = 6;
+  optional AlbumMessage album = 6;
   optional NodeInfo node_info = 7;
   repeated NodeInfo nodes_infos = 8;
   optional uint64 token = 9;
@@ -87,7 +88,7 @@ message LeaveData {
   uint32 position =2;
 }
 
-message Album {
+message AlbumMessage {
   repeated File files = 1;
   repeated string users = 2;
 }

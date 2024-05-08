@@ -1,13 +1,13 @@
 package org.client.crdts;
 
 import org.client.crdts.base.VersionVector;
+import org.messages.central.AlbumMessage;
+import org.messages.central.Classification;
 import org.messages.central.File;
 import org.messages.p2p.OperationMessage;
 import org.client.crdts.base.Operation;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @FunctionalInterface
 interface OperationHandler {
@@ -19,8 +19,8 @@ public class Album {
     private static Album instance = null;
 
     private GOSet fileRatingsCRDT = null;
-    private ORset filesCRDT = null;
-    private ORset usersCRDT = null;
+    private ORset<File> filesCRDT = null;
+    private ORset<String> usersCRDT = null;
 
     private String nodeId;
 
@@ -30,19 +30,19 @@ public class Album {
         instance = this;
 
         operationHandlers.put("addFile", (o) -> {
-            return filesCRDT.addElement(o.operation, o.element, nodeId);
+            return filesCRDT.addElement(o.operation, ((Operation<File>)o).element, nodeId);
         });
 
         operationHandlers.put("removeFile", (o) -> {
-            return filesCRDT.removeElement(o.operation, o.element);
+            return filesCRDT.removeElement(o.operation, ((Operation<File>)o).element);
         });
 
         operationHandlers.put("addUser", (o) -> {
-            return usersCRDT.addElement(o.operation, o.element, nodeId);
+            return usersCRDT.addElement(o.operation, ((Operation<String>)o).element, nodeId);
         });
 
         operationHandlers.put("removeUser", (o) -> {
-            return usersCRDT.removeElement(o.operation, o.element);
+            return usersCRDT.removeElement(o.operation, ((Operation<String>)o).element);
         });
 
         operationHandlers.put("rate", (o) -> {
@@ -115,5 +115,20 @@ public class Album {
 
     public String toString(){
         return this.usersCRDT.toString();
+    }
+
+    public AlbumMessage toAlbumMessage(){
+        AlbumMessage.Builder b = AlbumMessage.newBuilder();
+        b.addAllUsers(usersCRDT.elements());
+        ArrayList<File> files = new ArrayList<>();
+        ArrayList<Classification> classifications = new ArrayList<>();
+        classifications.add(Classification.newBuilder().setUsername("miguel").setValue(5).build());
+        files.add(File.newBuilder()
+                .setName("file1")
+                .setHash(123)
+                .addAllClassifications(classifications)
+                .build());
+        b.addAllFiles(files);
+        return b.build();
     }
 }

@@ -7,9 +7,9 @@ import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Operation implements Serializable {
+public class Operation<T> implements Serializable {
     public String operation;
-    public String element;
+    public T element;
     public VersionVector versionVector;
     public Set<VersionVector> observed;
     // For ratings
@@ -18,7 +18,7 @@ public class Operation implements Serializable {
     public int rating;
 
     // For Orset
-    public Operation(String operation, String element, VersionVector versionVector, Set<VersionVector> observed) {
+    public Operation(String operation, T element, VersionVector versionVector, Set<VersionVector> observed) {
         this.operation = operation;
         this.element = element;
         this.versionVector = versionVector;
@@ -34,16 +34,16 @@ public class Operation implements Serializable {
     }
 
     // For chat
-    public Operation(String operation, String message) {
+    public Operation(String operation, T element) {
         this.operation = operation;
-        this.element = message;
+        this.element = element;
     }
 
     public Operation(OperationMessage om) {
         if (om.hasOperation())
             this.operation = om.getOperation();
         if (om.hasElement())
-            this.element = om.getElement();
+            this.element = (T) om.getElement();
 
         if (om.hasVectorClock())
             this.versionVector = new VersionVector(om.getVectorClock().getNodeId(), om.getVectorClock().getCounter());
@@ -70,7 +70,7 @@ public class Operation implements Serializable {
             builder.setOperation(operation);
 
         if (this.element != null)
-            builder.setElement(element);
+            builder.setElement(element.toString());
 
         if (this.versionVector != null) {
             builder.setVectorClock(VectorClock.newBuilder()
@@ -107,7 +107,7 @@ public class Operation implements Serializable {
     public void fromString(String s){
         String[] parts = s.split(",");
         operation = parts[0];
-        element = parts[1];
+        element = (T) parts[1];
         observed = new HashSet<>();
 
     }

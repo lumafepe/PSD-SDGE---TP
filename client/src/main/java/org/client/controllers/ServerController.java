@@ -1,5 +1,6 @@
 package org.client.controllers;
 
+import org.client.crdts.Album;
 import org.messages.central.*;
 
 import java.io.IOException;
@@ -12,9 +13,11 @@ import java.util.List;
 public class ServerController {
 
     private static final List<String> operations = Arrays.asList(
-            "/register", "/login", "/logout", "/listAlbums", "/createAlbum", "/getAlbum", "/edit");
+            "/register", "/login", "/logout", "/listAlbums", "/createAlbum", "/getAlbum", "/editAlbum", "/leaveAlbum");
 
     private Socket serverSocket = null;
+    private int clock = 0;
+    private int position = 0;
 
     public ServerController(String address, int port) {
         try {
@@ -62,11 +65,16 @@ public class ServerController {
         }
 
         if (data.startsWith("/editAlbum")) {
-            return this.send(ServerOperations.editAlbum(data));
+            Message m = this.send(ServerOperations.editAlbum(data));
+            if (m.getType() == Type.NEWCLIENT){
+                this.clock = m.getNewClient().getClock();
+                this.position = m.getNewClient().getPosition();
+            }
+            return m;
         }
 
         if (data.startsWith("/leaveAlbum")){
-            return this.send(ServerOperations.leaveAlbum(data));
+            return this.send(ServerOperations.leaveAlbum(data, this.clock, this.position, Album.getInstance()));
         }
 
         return null;

@@ -1,5 +1,6 @@
 package org.client.controllers;
 
+import org.client.crdts.Album;
 import org.messages.central.*;
 
 public class ServerOperations {
@@ -66,14 +67,24 @@ public class ServerOperations {
         return m;
     }
 
-    public static Message leaveAlbum(String data){
+    public static Message leaveAlbum(String data, int clock, int position, Album album){
         String r = data.substring("/leaveAlbum".length());
         String[] split = r.split(" ");
 
         String albumName = split[1];
 
-        Message m = Message.newBuilder().setType(Type.LEAVE).setAlbumName(albumName).build();
-        // todo: get metadata
+        LeaveData lD = LeaveData.newBuilder()
+                .setClock(clock+2)
+                .setPosition(position)
+                .build();
+
+        Message m = Message.newBuilder()
+                .setType(Type.LEAVE)
+                .setAlbumName(albumName)
+                .setLeaveData(lD)
+                .setAlbum(Album.getInstance().toAlbumMessage())
+                .build();
+
         return m;
     }
 
