@@ -5,7 +5,7 @@ import org.client.messages.ClientMessage;
 import org.client.controllers.peers.PeerController;
 import org.client.crdts.CRDTS;
 import org.messages.central.*;
-import org.client.utils.IncomingMessage;
+import org.client.messages.IncomingMessage;
 import org.client.crdts.Album;
 import org.client.network.Broadcaster;
 import org.client.network.Network;
