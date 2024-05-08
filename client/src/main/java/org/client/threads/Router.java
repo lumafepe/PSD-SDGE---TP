@@ -61,7 +61,7 @@ public class Router extends Thread {
         }
         else {
             ClientMessage incMessage = this.peerController.handleIncoming(message.data());
-
+            System.out.println(incMessage.type());
             if (this.peerManagementController.handlesPeerMessage(incMessage)){
                 this.peerManagementController.handlePeerMessage(incMessage);
             }

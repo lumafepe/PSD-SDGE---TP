@@ -14,7 +14,7 @@ import java.util.List;
 
 public class PeerManagementController {
     private static final List<String> peerMessages = Arrays.asList(
-            "join", "state", "leave", "forward");
+            "join", "informJoin", "state", "leave", "forward");
     private Network network;
     private Album album;
     private String identity;
@@ -37,13 +37,27 @@ public class PeerManagementController {
     public void handlePeerMessage(ClientMessage message) throws IOException {
         switch (message.type()) {
             case "join" -> {
+                System.out.println("Join received");
                 String newPeerIdentity = message.identity();
+
+                // Message informing other nodes that a new node has joined
+                ClientMessage informMessage = new ClientMessage("informJoin", null, null, newPeerIdentity);
+                this.network.loopSend(informMessage.asBytes());
+
                 this.network.addUser(newPeerIdentity);
 
+                // Send state to joining node
                 ClientMessage clientMessage = new ClientMessage("state", null, album.getCrdts(), identity);
+                // todo: must send also pending and keep forwarding messages
                 this.network.send(clientMessage.asBytes(), newPeerIdentity);
             }
+            case "informJoin" -> {
+                System.out.println("Inform Join received");
+                String newPeerIdentity = message.identity();
+                this.network.addUser(newPeerIdentity);
+            }
             case "state" -> {
+                System.out.println("State received");
                 CRDTS crdts = message.crdts();
                 this.album.setCrdts(crdts);
 
@@ -97,9 +111,10 @@ public class PeerManagementController {
                 this.network.addUser(String.valueOf(client.getPort()));
             }
 
-            ClientMessage bMessage = new ClientMessage("join", null, null, this.identity);
+            ClientMessage joinMessage = new ClientMessage("join", null, null, this.identity);
+
             try {
-                this.network.send(bMessage.asBytes(), String.valueOf(mediator.getPort()));
+                this.network.send(joinMessage.asBytes(), String.valueOf(mediator.getPort()));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
