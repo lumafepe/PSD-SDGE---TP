@@ -83,10 +83,14 @@ albumCreateHandler(Socket,Username,Name) ->
             loop(Socket,Username)
     end.
 
+
+
+
+
 albumEditHandler(Socket,Username,Name) ->
     io:fwrite("Starting to edit album: ~p.\n", [Name]),
     {ok,{Adress,Port}} = inet:peername(Socket),
-    case albums_manager:editAlbum(Username,Name,Adress,Port) of
+    case albums_manager:editAlbum(Username,Name,inet_parse:ntoa(Adress),Port) of
         {error, ErrorMsg} ->
             io:fwrite("~p ~p.\n", [ErrorMsg, Name]),
             answer_manager:errorReply(Socket,ErrorMsg),

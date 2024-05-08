@@ -33,16 +33,15 @@ leave(Username,Name,Clock,Position,Users,Files) ->
     
 
 getOnline(Users) ->
-    Status = maps:values(Users),
-    lists:filter(
-        fun(State)-> 
+    maps:filter(
+        fun (Username, State) ->
             case State of
                 false ->
                     false;
                 _ ->
                     true
             end
-        end, Status).
+        end,Users).
 
 
 
@@ -152,7 +151,8 @@ loop(Albums,AccessesByPerson) ->
                         HasPerms ->
                             _Users = maps:update(Username,{Adress,Port},Users),
                             _Albums = maps:update(Name,{PID,_Users},Albums),
-                            _Online = getOnline(Users),
+                            _OnlineMap = getOnline(Users),
+                            _Online = maps:values(_OnlineMap),
                             if
                                 _Online == [] ->
                                     {ok,Files} = album_manager:getAlbum(PID),
@@ -160,7 +160,7 @@ loop(Albums,AccessesByPerson) ->
                                     loop(_Albums,AccessesByPerson);
                                 true ->
                                     {Clock,Position} = album_manager:getClock(PID),
-                                    From ! {?MODULE, {online, _Online,Clock,Position}},
+                                    From ! {?MODULE, {online, _OnlineMap,Clock,Position}},
                                     loop(_Albums,AccessesByPerson)
                             end;
                         true ->
