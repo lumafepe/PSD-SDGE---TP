@@ -47,9 +47,10 @@ getOnline(Users) ->
 
 
 getUsersRemoved(Old,New) ->
-    sets:subtract(New,Old).
-getUsersAdded(Old,New) ->
     sets:subtract(Old,New).
+
+getUsersAdded(Old,New) ->
+    sets:subtract(New,Old).
 
 addAlbumToUsers(AlbumName,Users,AccessesByPerson) ->
     sets:fold(
@@ -131,11 +132,11 @@ loop(Albums,AccessesByPerson) ->
                         {ok, _} ->
                             _Albums = maps:update(Name,{PID,maps:update(Username,false,__Users)},Albums),
                             From ! {?MODULE, {ok}},
-                            loop(_Albums,AccessesByPerson);
+                            loop(_Albums,__AccessesByPerson);
                         true ->
                             _Albums = maps:update(Name,{PID,__Users},Albums),
                             From ! {?MODULE, {ok}},
-                            loop(_Albums,AccessesByPerson)
+                            loop(_Albums,__AccessesByPerson)
                     end
             end;
 
