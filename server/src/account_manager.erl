@@ -1,5 +1,5 @@
 -module(account_manager).
--export([start/0, signup/2, login/2, logout/1]).
+-export([start/0, signup/2, login/4, logout/1,getAddress/1]).
 
 
 % inicia o gestor de contas e regista o processo como account_manager
@@ -18,8 +18,11 @@ rpc(Request) ->
 signup(Username,Password) ->
     rpc({signup,Username,Password}).
 
-login(Username,Password) ->
-    rpc({login,Username,Password}).
+login(Username,Password,Ip,Port) ->
+    rpc({login,Username,Password,Ip,Port}).
+
+getAddress(Username) ->
+    rpc({get,Username}).
 
 logout(Username) ->
     rpc({logout,Username}).
@@ -38,12 +41,12 @@ loop(Accounts) ->
                     From ! {?MODULE, {error, username_taken}},
                     loop(Accounts)
             end;
-        {{login,Username,Password},From} -> 
+        {{login,Username,Password,Ip,Port},From} -> 
             case maps:find(Username,Accounts) of 
                 {ok, {Password,false}} -> 
                     From ! {?MODULE, {ok}},
-                    loop(maps:update(Username,{Password,true},Accounts));
-                {ok, {Password,true}} -> 
+                    loop(maps:update(Username,{Password,{Ip,Port}},Accounts));
+                {ok, {Password,_}} -> 
                     From ! {?MODULE, {error, login_status, "User already logged in"}},
                     loop(Accounts);
                 _ -> 
@@ -52,11 +55,20 @@ loop(Accounts) ->
             end;
         {{logout,Username},From} ->
             case maps:find(Username,Accounts) of 
-                {ok, {Password,true}} -> 
+                {ok, {Password,{_,_}}} -> 
                     From ! {?MODULE, ok},
                     loop(maps:update(Username,{Password,false},Accounts));
                 _ -> 
                     From ! {?MODULE, {error, "User not logged in"}},
                     loop(Accounts)
+            end;
+        {{get,Username},From} ->
+            case maps:find(Username,Accounts) of
+            {ok, {Password,Data}} ->
+                From ! {?MODULE, {ok,Data}},
+                loop(Accounts);
+            _ ->
+                From ! {?MODULE, {error}},
+                loop(Accounts)
             end
     end.

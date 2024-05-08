@@ -6,6 +6,7 @@ option java_multiple_files = true;
 message Message {
   Type type = 1;
   optional UserData user_data = 2;
+  optional Address address = 14;
   optional ErrorReply error_message = 3;
   optional string album_name = 4;
   optional Albums albums = 5;
@@ -29,7 +30,7 @@ enum Type {
   ERRORREPLY = 1; // S2C -> error_message
   ALBUMS = 2; // S2C -> albums
   REGISTER = 3; // C2S -> user_data | {SUCESIUM | ERRORREPLY}
-  LOGIN = 4; // C2S -> user_data | {SUCESIUM | ERRORREPLY}
+  LOGIN = 4; // C2S -> {user_data && address} | {SUCESIUM | ERRORREPLY}
   LOGOUT = 5; // C2S -> None | {SUCESIUM | ERRORREPLY}
   ALBUMSLIST = 6; // C2S -> None | ALBUMS
   ALBUMCREATE = 7; // C2S -> album_name | {SUCESIUM | ERRORREPLY}
@@ -44,6 +45,11 @@ enum Type {
   NEWCLIENT = 16; // S2C -> new_client
   LEAVE = 19; // C2S -> {leave_data & album_name & album} | {ERRORREPLY | SUCESIUM}
   EDITING = 20; // C2S -> album_name | {ERRORREPLY | SUCESIUM}
+}
+
+message Address {
+  string ip = 1;
+  uint32 port = 2;
 }
 
 message UserData {
