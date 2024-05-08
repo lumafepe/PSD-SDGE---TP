@@ -3,13 +3,13 @@
 import org.messages.central.*;
 import org.messages.p2p.*;
 
-import org.client.BroadcastMessage;
-import org.client.Broadcaster;
+import org.client.messages.BroadcastMessage;
+import org.client.network.Broadcaster;
 import org.client.crdts.Album;
 import org.client.crdts.base.Operation;
 import org.client.crdts.GOSet;
 import org.client.crdts.ORset;
-import org.client.Rating;
+import org.client.crdts.Rating;
 import org.client.controllers.DHTController;
 import org.client.controllers.ServerController;
 import org.zeromq.SocketType;

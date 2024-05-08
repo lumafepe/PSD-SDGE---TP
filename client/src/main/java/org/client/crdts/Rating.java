@@ -1,4 +1,4 @@
-package org.client;
+package org.client.crdts;
 
 import java.io.Serializable;
 

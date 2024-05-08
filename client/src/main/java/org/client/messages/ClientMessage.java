@@ -1,12 +1,10 @@
-package org.client;
+package org.client.messages;
 
-import org.client.crdts.base.Operation;
-import org.client.utils.VectorClock;
+import org.client.crdts.CRDTS;
 
 import java.io.*;
 
-public record BroadcastMessage(int index, VectorClock version, Operation operation) implements Serializable {
-
+public record ClientMessage (String type, BroadcastMessage message, CRDTS crdts, String identity) implements Serializable {
     public byte[] asBytes() throws IOException {
 
         ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
@@ -16,11 +14,10 @@ public record BroadcastMessage(int index, VectorClock version, Operation operati
         return byteArray.toByteArray();
     }
 
-    public static BroadcastMessage fromBytes(byte[] payload) throws IOException, ClassNotFoundException {
+    public static ClientMessage fromBytes(byte[] payload) throws IOException, ClassNotFoundException {
 
         ByteArrayInputStream byteIn = new ByteArrayInputStream(payload);
         ObjectInputStream bytes = new ObjectInputStream(byteIn);
-        return (BroadcastMessage) bytes.readObject();
+        return (ClientMessage) bytes.readObject();
     }
-
 }

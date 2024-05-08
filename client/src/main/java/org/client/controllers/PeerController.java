@@ -1,11 +1,9 @@
 package org.client.controllers;
 
-import org.client.BroadcastMessage;
-import org.client.Broadcaster;
-import org.client.ClientMessage;
+import org.client.network.Broadcaster;
+import org.client.messages.ClientMessage;
 import org.client.crdts.Album;
 import org.client.crdts.base.Operation;
-import org.messages.central.Message;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -113,7 +111,7 @@ public class PeerController {
             throw new RuntimeException(e);
         }
 
-        if (!messageReceived.type().equals("join") && !messageReceived.type().equals("forward")) {
+        if (!messageReceived.type().equals("join") && !messageReceived.type().equals("forward") && !messageReceived.type().equals("state")) {
             broadcaster.receive(messageReceived.message());
         }
 

@@ -1,7 +1,8 @@
-package org.client;
+package org.client.network;
 
 import org.client.crdts.Album;
 import org.client.crdts.base.Operation;
+import org.client.messages.BroadcastMessage;
 import org.client.utils.VectorClock;
 
 import java.io.IOException;
@@ -12,10 +13,10 @@ public class Broadcaster {
 
     private final Network network;
 
-    private final VectorClock version;
-    private final int self;
+    private VectorClock version;
+    private int self;
 
-    private final Queue<BroadcastMessage> pending;
+    private Queue<BroadcastMessage> pending;
     private final Album crdts = Album.getInstance();
 
     public Broadcaster(Network network, int self, int selfValue) {
@@ -27,6 +28,15 @@ public class Broadcaster {
             this.version.increment(self);
         }
 
+        this.pending = new LinkedList<>();
+    }
+
+    public void initialize(int self, int selfValue){
+        this.self = self;
+        this.version = new VectorClock(network.size() + 1, self);
+        for (int i = 0; i < selfValue; i++) {
+            this.version.increment(self);
+        }
         this.pending = new LinkedList<>();
     }
 

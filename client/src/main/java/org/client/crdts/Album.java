@@ -1,6 +1,5 @@
 package org.client.crdts;
 
-import org.client.BroadcastMessage;
 import org.client.crdts.base.VersionVector;
 import org.messages.central.AlbumMessage;
 import org.messages.central.Classification;

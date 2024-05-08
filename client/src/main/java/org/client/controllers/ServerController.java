@@ -18,8 +18,13 @@ public class ServerController {
     private Socket serverSocket = null;
     private int clock = 0;
     private int position = 0;
+    private String clientIp;
+    private int clientPort;
 
-    public ServerController(String address, int port) {
+    public ServerController(String address, int port, String clientIp, int clientPort) {
+        this.clientIp = clientIp;
+        this.clientPort = clientPort;
+
         try {
             this.serverSocket = new Socket(address, port);
         }
@@ -45,7 +50,7 @@ public class ServerController {
         }
 
         if (data.startsWith("/login")) {
-            return this.send(ServerOperations.login(data));
+            return this.send(ServerOperations.login(data, this.clientIp, this.clientPort));
         }
 
         if (data.startsWith("/logout")) {

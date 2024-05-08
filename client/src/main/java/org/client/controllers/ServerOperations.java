@@ -17,7 +17,7 @@ public class ServerOperations {
         return Message.newBuilder().setType(Type.REGISTER).setUserData(reg).build();
     }
 
-    public static Message login(String data) {
+    public static Message login(String data, String clientIp, int clientPort) {
 
         String r = data.substring("/login".length());
         String[] split = r.split(" ");
@@ -26,7 +26,8 @@ public class ServerOperations {
         String password = split[2];
 
         UserData l = UserData.newBuilder().setUsername(username).setPassword(password).build();
-        return Message.newBuilder().setType(Type.LOGIN).setUserData(l).build();
+        Address a = Address.newBuilder().setPort(clientPort).setIp(clientIp).build();
+        return Message.newBuilder().setType(Type.LOGIN).setUserData(l).setAddress(a).build();
     }
 
     public static Message logout(String data) {
