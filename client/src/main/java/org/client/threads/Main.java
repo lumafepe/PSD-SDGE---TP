@@ -7,6 +7,7 @@ import org.zeromq.ZMQ;
 import java.util.Scanner;
 
 public class Main {
+
     public static void main(String[] args) {
         new Router(args[0], "localhost", 4321).start();
 
