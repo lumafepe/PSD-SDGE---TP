@@ -46,14 +46,14 @@ public class PeerManagementController {
                 int clockValue = message.clock();
 
                 // Message informing other nodes that a new node has joined
-                ClientMessage informMessage = new ClientMessage("informJoin", null, null, newPeerIdentity, clockValue, position, null);
+                ClientMessage informMessage = new ClientMessage("informJoin", null, null, newPeerIdentity, clockValue, position, null, null);
                 this.broadcaster.addToVector(position, clockValue);
                 this.network.loopSend(informMessage.asBytes());
 
                 this.network.addUser(newPeerIdentity);
 
                 // Send state to joining node
-                ClientMessage clientMessage = new ClientMessage("state", null, album.getCrdts(), identity, -1, -1, this.broadcaster.getVersion());
+                ClientMessage clientMessage = new ClientMessage("state", null, album.getCrdts(), identity, -1, -1, this.broadcaster.getVersion(), this.broadcaster.getPending());
                 // todo: must send also pending and keep forwarding messages
                 this.network.send(clientMessage.asBytes(), newPeerIdentity);
 
@@ -68,7 +68,7 @@ public class PeerManagementController {
                 CRDTS crdts = message.crdts();
                 this.album.setCrdts(crdts);
                 this.broadcaster.setVersion(message.vc(), myClock, myPosition);
-
+                this.broadcaster.setPending(message.pending());
 
                 // todo: must send also pending and keep forwarding messages
             }
@@ -122,7 +122,7 @@ public class PeerManagementController {
                 this.network.addUser(String.valueOf(client.getPort()));
             }
 
-            ClientMessage joinMessage = new ClientMessage("join", null, null, this.identity, vectorInitialValue, vectorPosition, null);
+            ClientMessage joinMessage = new ClientMessage("join", null, null, this.identity, vectorInitialValue, vectorPosition, null, null);
 
             try {
                 this.network.send(joinMessage.asBytes(), String.valueOf(mediator.getPort()));

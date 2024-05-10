@@ -72,7 +72,7 @@ public class Broadcaster {
     public void broadcast(Operation op) throws IOException {
 
         BroadcastMessage message = new BroadcastMessage(this.self, this.version, op);
-        ClientMessage clientMessage = new ClientMessage("op", message, null, null, -1, -1, null);
+        ClientMessage clientMessage = new ClientMessage("op", message, null, null, -1, -1, null, null);
         this.version.increment(this.self);
         this.network.loopSend(clientMessage.asBytes()); // loop over peer network and send message
 
@@ -97,6 +97,14 @@ public class Broadcaster {
         return this.version;
     }
 
+    public void setPending(Queue<BroadcastMessage> pending){
+        this.pending = pending;
+    }
+
+    public Queue<BroadcastMessage> getPending(){
+        return this.pending;
+    }
+
     public void addForwardingNode(String forwardingNode){
         this.joinTimestamps.put(forwardingNode, this.version);
         List<Boolean> list = new ArrayList<>();
@@ -114,7 +122,7 @@ public class Broadcaster {
             VectorClock joinTimestamp = this.joinTimestamps.get(forwardingNode);
             if (!received){
                 if (msgVC.happensBefore(joinTimestamp)){
-                    ClientMessage forwardMessage = new ClientMessage("forward", message.message(), null, null, -1, -1, null);
+                    ClientMessage forwardMessage = new ClientMessage("forward", message.message(), null, null, -1, -1, null, null);
                     this.network.send(forwardMessage.asBytes(), forwardingNode);
                 } else {
                     this.receivedJoin.get(forwardingNode).add(msgVC.getId(), true);
