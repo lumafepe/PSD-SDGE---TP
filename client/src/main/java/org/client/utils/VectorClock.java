@@ -53,8 +53,9 @@ public class VectorClock implements Serializable {
         int id = other.getId();
         List<Integer> otherClock = other.getClock();
 
-        if (other.getLength() > this.getLength()) {
+        if (other.getLength() != this.getLength()) {
             this.merge(other);
+            return true;
         }
 
         if (this.clock.get(id) != (otherClock.get(id) - 1)) {

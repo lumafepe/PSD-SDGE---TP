@@ -75,7 +75,7 @@ public class ServerOperations {
         String albumName = split[1];
 
         LeaveData lD = LeaveData.newBuilder()
-                .setClock(clock+2)
+                .setClock(clock)
                 .setPosition(position)
                 .build();
 

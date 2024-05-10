@@ -64,11 +64,6 @@ public class Router extends Thread {
             if (this.peerManagementController.handlesPeerMessage(incMessage)){
                 this.peerManagementController.handlePeerMessage(incMessage);
             }
-
-            if (incMessage.type().equals("state")){
-                CRDTS crdts = incMessage.crdts();
-                this.operations.setCrdts(crdts);
-            }
         }
 
     }

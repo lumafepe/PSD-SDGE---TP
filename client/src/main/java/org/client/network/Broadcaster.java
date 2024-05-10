@@ -3,6 +3,7 @@ package org.client.network;
 import org.client.crdts.Album;
 import org.client.crdts.base.Operation;
 import org.client.messages.BroadcastMessage;
+import org.client.messages.ClientMessage;
 import org.client.utils.VectorClock;
 
 import java.io.IOException;
@@ -63,8 +64,9 @@ public class Broadcaster {
     public void broadcast(Operation op) throws IOException {
 
         BroadcastMessage message = new BroadcastMessage(this.self, this.version, op);
+        ClientMessage clientMessage = new ClientMessage("op", message, null, null);
         this.version.increment(this.self);
-        this.network.loopSend(message.asBytes()); // loop over peer network and send message
+        this.network.loopSend(clientMessage.asBytes()); // loop over peer network and send message
     }
 
     public void receive(BroadcastMessage message) {
