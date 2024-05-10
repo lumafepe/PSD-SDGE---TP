@@ -4,6 +4,7 @@ import org.client.network.Broadcaster;
 import org.client.messages.ClientMessage;
 import org.client.crdts.Album;
 import org.client.crdts.base.Operation;
+import org.client.utils.VectorClock;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -111,10 +112,12 @@ public class PeerController {
             throw new RuntimeException(e);
         }
 
-        if (!messageReceived.type().equals("join") && !messageReceived.type().equals("forward") && !messageReceived.type().equals("state")) {
+        return messageReceived;
+    }
+
+    public void receiveMessage(ClientMessage messageReceived){
+        if (!messageReceived.type().equals("join") && !messageReceived.type().equals("forward") && !messageReceived.type().equals("state") && !messageReceived.type().equals("informJoin")) {
             broadcaster.receive(messageReceived.message());
         }
-
-        return messageReceived;
     }
 }

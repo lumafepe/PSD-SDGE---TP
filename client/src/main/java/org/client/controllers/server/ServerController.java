@@ -16,8 +16,8 @@ public class ServerController {
             "/register", "/login", "/logout", "/listAlbums", "/createAlbum", "/getAlbum", "/editAlbum", "/leaveAlbum");
 
     private Socket serverSocket = null;
-    private int clock = 0;
-    private int position = 0;
+    public int clock = 0;
+    public int position = 0;
     private String clientIp;
     private int clientPort;
 

@@ -7,8 +7,7 @@ import org.client.messages.ClientMessage;
 import org.client.utils.VectorClock;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 
 public class Broadcaster {
 
@@ -19,6 +18,9 @@ public class Broadcaster {
 
     private Queue<BroadcastMessage> pending;
     private final Album crdts = Album.getInstance();
+
+    private Map<String, VectorClock> joinTimestamps = new HashMap<>();
+    private Map<String, List<Boolean>> receivedJoin = new HashMap<>();
 
     public Broadcaster(Network network, int self, int selfValue) {
         this.network = network;
@@ -39,6 +41,12 @@ public class Broadcaster {
             this.version.increment(self);
         }
         this.pending = new LinkedList<>();
+    }
+
+    public void addToVector(int position, int clock){
+        VectorClock vectorClock = new VectorClock(position+1, position);
+        vectorClock.setClockPosition(position, clock);
+        this.version.merge(vectorClock);
     }
 
     private boolean canDeliver(BroadcastMessage message) {
@@ -64,9 +72,10 @@ public class Broadcaster {
     public void broadcast(Operation op) throws IOException {
 
         BroadcastMessage message = new BroadcastMessage(this.self, this.version, op);
-        ClientMessage clientMessage = new ClientMessage("op", message, null, null);
+        ClientMessage clientMessage = new ClientMessage("op", message, null, null, -1, -1, null);
         this.version.increment(this.self);
         this.network.loopSend(clientMessage.asBytes()); // loop over peer network and send message
+
     }
 
     public void receive(BroadcastMessage message) {
@@ -75,5 +84,46 @@ public class Broadcaster {
             return;
         }
         this.deliver(message);
+    }
+
+    public void setVersion(VectorClock vc, int clock, int position){
+        VectorClock vectorClock = new VectorClock(position+1, position);
+        vectorClock.setClockPosition(position, clock);
+        this.version = vc;
+        this.version.merge(vectorClock);
+    }
+
+    public VectorClock getVersion() {
+        return this.version;
+    }
+
+    public void addForwardingNode(String forwardingNode){
+        this.joinTimestamps.put(forwardingNode, this.version);
+        List<Boolean> list = new ArrayList<>();
+        for (int i=0; i<this.version.getLength(); i++)
+            list.add(false);
+        this.receivedJoin.put(forwardingNode, list);
+    }
+
+    public void forward(ClientMessage message) throws IOException {
+        VectorClock msgVC = message.message().version();
+        for (String forwardingNode : this.joinTimestamps.keySet()) {
+            // Check if node that sent the message knows about this joining node
+
+            boolean received = this.receivedJoin.get(forwardingNode).get(msgVC.getId());
+            VectorClock joinTimestamp = this.joinTimestamps.get(forwardingNode);
+            if (!received){
+                if (msgVC.happensBefore(joinTimestamp)){
+                    ClientMessage forwardMessage = new ClientMessage("forward", message.message(), null, null, -1, -1, null);
+                    this.network.send(forwardMessage.asBytes(), forwardingNode);
+                } else {
+                    this.receivedJoin.get(forwardingNode).add(msgVC.getId(), true);
+                    if (this.receivedJoin.get(forwardingNode).stream().reduce(true, (aBoolean, aBoolean2) -> aBoolean && aBoolean2)){
+                        this.receivedJoin.remove(forwardingNode);
+                        this.joinTimestamps.remove(forwardingNode);
+                    }
+                }
+            }
+        }
     }
 }

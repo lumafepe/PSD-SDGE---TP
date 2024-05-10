@@ -4,6 +4,7 @@ import org.client.controllers.peers.PeerManagementController;
 import org.client.messages.ClientMessage;
 import org.client.controllers.peers.PeerController;
 import org.client.crdts.CRDTS;
+import org.client.utils.VectorClock;
 import org.messages.central.*;
 import org.client.messages.IncomingMessage;
 import org.client.crdts.Album;
@@ -26,6 +27,10 @@ public class Router extends Thread {
     private final PeerController peerController;
     private final PeerManagementController peerManagementController;
 
+    private VectorClock joinTimestamp;
+    private String newNodeIdentity;
+    private VectorClock receivedTimestamps;
+
     public Router(String bindPort, String serverAddress, int serverPort) {
         this.bindPort = bindPort;
 
@@ -36,7 +41,7 @@ public class Router extends Thread {
 
         this.server = new ServerController(serverAddress, serverPort, "localhost", Integer.parseInt(bindPort));
         this.peerController = new PeerController(this.broadcaster);
-        this.peerManagementController = new PeerManagementController(this.network, this.operations, this.bindPort);
+        this.peerManagementController = new PeerManagementController(this.network, this.operations, this.bindPort, this.broadcaster);
     }
 
     private void routeMessage(IncomingMessage message) throws IOException {
@@ -60,12 +65,31 @@ public class Router extends Thread {
         }
         else {
             ClientMessage incMessage = this.peerController.handleIncoming(message.data());
-            System.out.println(incMessage.type());
+            this.peerController.receiveMessage(incMessage);
+            if (incMessage.type().equals("op")) {
+                this.broadcaster.forward(incMessage);
+            }
+
             if (this.peerManagementController.handlesPeerMessage(incMessage)){
-                this.peerManagementController.handlePeerMessage(incMessage);
+                String msgType = this.peerManagementController.handlePeerMessage(incMessage, this.server.clock, this.server.position);
+                if (msgType.equals("join")){
+                    // Must forward messages to new node
+                    this.broadcaster.addForwardingNode(incMessage.identity());
+
+                    // this.joinTimestamp = this.broadcaster.getVersion();
+                    // this.newNodeIdentity = incMessage.identity();
+                }
             }
         }
 
+    }
+
+    private boolean forwardMessage(ClientMessage message){
+        // Only forward if has node to forward
+        if (this.newNodeIdentity != null){
+            VectorClock messageVC = message.message().version();
+        }
+        return false;
     }
 
     public void run() {
