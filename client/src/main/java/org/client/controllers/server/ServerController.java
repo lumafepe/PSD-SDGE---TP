@@ -20,6 +20,7 @@ public class ServerController {
     public int position = 0;
     private String clientIp;
     private int clientPort;
+    private String currentAlbum;
 
     public ServerController(String address, int port, String clientIp, int clientPort) {
         this.clientIp = clientIp;
@@ -75,6 +76,7 @@ public class ServerController {
                 this.clock = m.getNewClient().getClock();
                 this.position = m.getNewClient().getPosition();
             }
+            this.currentAlbum = data.substring("/editAlbum".length());
             return m;
         }
 
@@ -83,6 +85,10 @@ public class ServerController {
         }
 
         return null;
+    }
+
+    public String getCurrentAlbum(){
+        return this.currentAlbum;
     }
 
     public Message send(Message message) {

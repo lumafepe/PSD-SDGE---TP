@@ -22,6 +22,8 @@ public class Broadcaster {
     private Map<String, VectorClock> joinTimestamps = new HashMap<>();
     private Map<String, List<Boolean>> receivedJoin = new HashMap<>();
 
+    private ArrayList<VectorClock> waiting = new ArrayList<>();
+
     public Broadcaster(Network network, int self, int selfValue) {
         this.network = network;
         this.self = self;
@@ -65,6 +67,11 @@ public class Broadcaster {
     }
     private void deliver(BroadcastMessage message) {
         this.version.increment(message.index());
+        for(VectorClock vc : this.waiting){
+            if (vc.getClock().get(vc.getId()) == this.version.getClock().get(vc.getId())){
+                this.waiting.remove(vc);
+            }
+        }
         crdts.handleOperation(message.operation());
         this.loopPending();
     }
@@ -133,5 +140,15 @@ public class Broadcaster {
                 }
             }
         }
+    }
+
+    public void addWaitingMsg(VectorClock vc){
+        if (this.version.getClock().get(vc.getId()) > vc.getClock().get(vc.getId())){
+            this.waiting.add(vc);
+        }
+    }
+
+    public boolean canLeave(){
+        return this.waiting.isEmpty();
     }
 }

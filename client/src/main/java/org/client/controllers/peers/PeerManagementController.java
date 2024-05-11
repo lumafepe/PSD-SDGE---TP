@@ -1,5 +1,6 @@
 package org.client.controllers.peers;
 
+import org.client.controllers.server.ServerController;
 import org.client.crdts.Album;
 import org.client.crdts.CRDTS;
 import org.client.network.Broadcaster;
@@ -9,9 +10,7 @@ import org.client.utils.VectorClock;
 import org.messages.central.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class PeerManagementController {
     private static final List<String> peerMessages = Arrays.asList(
@@ -20,12 +19,17 @@ public class PeerManagementController {
     private Album album;
     private String identity;
     private Broadcaster broadcaster;
+    private ServerController server;
+    private String currentAlbum;
+    private Set<String> acksReceived = new HashSet<>();
+    private boolean isLeaving = false;
 
-    public PeerManagementController(Network network, Album album, String identity, Broadcaster broadcaster) {
+    public PeerManagementController(Network network, Album album, String identity, Broadcaster broadcaster, ServerController server) {
         this.network = network;
         this.album = album;
         this.identity = identity;
         this.broadcaster = broadcaster;
+        this.server = server;
     }
 
     public boolean handlesPeerMessage(ClientMessage message) {
@@ -73,8 +77,22 @@ public class PeerManagementController {
                 // todo: must send also pending and keep forwarding messages
             }
             case "leave" -> {
-                // todo
+                if (this.isLeaving && Integer.parseInt(message.identity()) > Integer.parseInt(this.identity)){
+                    this.isLeaving = false;
+                }
+                this.broadcaster.addWaitingMsg(message.vc());
+                ClientMessage leaveAck = new ClientMessage("leaveAck", null, null, null, -1, -1, null, null);
+                this.network.send(leaveAck.asBytes(), message.identity());
+                this.acksReceived = new HashSet<>();
                 System.out.println("Leave");
+            }
+            case "leaveAck" -> {
+                if (isLeaving){
+                    this.acksReceived.add(message.identity());
+                    if (this.acksReceived.size() == this.network.size()) {
+                        this.server.handle("/leaveAlbum " + this.server.getCurrentAlbum());
+                    }
+                }
             }
             case "forward" -> {
                 // todo

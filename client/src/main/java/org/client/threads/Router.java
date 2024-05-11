@@ -47,6 +47,16 @@ public class Router extends Thread {
     private void routeMessage(IncomingMessage message) throws IOException {
         String messageData = new String(message.data());
         if (this.server.handles(messageData)) {
+            if (messageData.startsWith("leaveAlbum")){
+                // Check if can leave
+                if (!this.broadcaster.canLeave()){
+                    System.out.println("Cannot leave!");
+                    return;
+                }
+                ClientMessage leaveMessage = new ClientMessage("leave", null, null, this.bindPort, -1, -1, this.broadcaster.getVersion(), null);
+                this.network.loopSend(leaveMessage.asBytes());
+                return;
+            }
             Message reply = this.server.handle(messageData);
 
             if (reply != null){
