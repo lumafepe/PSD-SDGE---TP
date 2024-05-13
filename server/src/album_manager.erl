@@ -45,7 +45,7 @@ loop(Files,Vectors,AvaiableVectors) ->
             From ! {?MODULE, {ok}},
             loop(_Files,Vectors,AvaiableVectors);
         {{addClock,Clock,Position}, From} ->
-            _AvaiableVectors = sets:add_element(position,AvaiableVectors),
+            _AvaiableVectors = sets:add_element(Position,AvaiableVectors),
             _Vectors = maps:update(Position,Clock,Vectors),
             From ! {?MODULE, {ok}},
             loop(Files,_Vectors,_AvaiableVectors);
