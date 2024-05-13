@@ -98,6 +98,7 @@ public class Broadcaster {
         vectorClock.setClockPosition(position, clock);
         this.version = vc;
         this.version.merge(vectorClock);
+        this.version.setId(position);
     }
 
     public VectorClock getVersion() {

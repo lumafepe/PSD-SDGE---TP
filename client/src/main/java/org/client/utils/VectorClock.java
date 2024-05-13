@@ -20,7 +20,7 @@ public class VectorClock implements Serializable {
     }
 
     private final List<Integer> clock;
-    private final int id;
+    private int id;
 
     public VectorClock(int vectorSize, int id) {
         this.id = id;
@@ -85,6 +85,10 @@ public class VectorClock implements Serializable {
 
     public int getId() {
         return id;
+    }
+
+    public void setId(int id){
+        this.id = id;
     }
 
     public String toString() {
