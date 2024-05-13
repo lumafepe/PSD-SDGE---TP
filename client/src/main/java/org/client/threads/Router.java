@@ -41,7 +41,7 @@ public class Router extends Thread {
 
         this.server = new ServerController(serverAddress, serverPort, "localhost", Integer.parseInt(bindPort));
         this.peerController = new PeerController(this.broadcaster);
-        this.peerManagementController = new PeerManagementController(this.network, this.operations, this.bindPort, this.broadcaster);
+        this.peerManagementController = new PeerManagementController(this.network, this.operations, this.bindPort, this.broadcaster, this.server);
     }
 
     private void routeMessage(IncomingMessage message) throws IOException {

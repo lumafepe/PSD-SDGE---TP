@@ -95,7 +95,7 @@ public class PeerManagementController {
                 }
             }
             case "forward" -> {
-                // todo
+                this.broadcaster.receive(message.message());
                 System.out.println("Forward");
             }
 
