@@ -1,5 +1,8 @@
 package org.client.controllers.peers;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.client.crdts.records.Rating;
 import org.client.network.Broadcaster;
 import org.client.messages.ClientMessage;
 import org.client.crdts.Album;
@@ -11,9 +14,13 @@ import java.util.Arrays;
 import java.util.List;
 
 public class PeerController {
+
+    private static final Logger logger = LogManager.getLogger();
+
     private static final List<String> operations = Arrays.asList(
             "/addFile", "/removeFile", "/addUser", "/removeUser", "/chat", "/showAlbum");
-    private Broadcaster broadcaster;
+
+    private final Broadcaster broadcaster;
     private final Album crdts = Album.getInstance();
 
     public PeerController(Broadcaster broadcaster) {
@@ -24,6 +31,7 @@ public class PeerController {
     public boolean handles(String data) {
         for (String op: PeerController.operations) {
             if (data.startsWith(op)) {
+                logger.info(String.format("handling peer operation '%s'", data));
                 return true;
             }
         }
@@ -89,8 +97,6 @@ public class PeerController {
             System.out.println(crdts.toString());
         }
 
-
-
         if (data.startsWith("/chat")) {
             String message = data.substring("/chat ".length());
             try {
@@ -99,6 +105,26 @@ public class PeerController {
                 throw new RuntimeException(e);
             }
         }
+
+        if (data.startsWith("/rate")) {
+
+            String[] split = data.substring("/rate".length()).split(" ");
+
+            String username = split[1];
+            String filename = split[2];
+
+            if (!crdts.getVotersCRDT().canRate(username)) {
+                return; // if user already voted, then ignore rate request for filename
+            }
+
+            crdts.getFileRatingsCRDT().increment(filename); // rate the file by incrementing the counter
+            crdts.getVotersCRDT().addRating(filename, username, crdts.getFileRatingsCRDT().getValue(filename)); // set user as already voted in the GOSet
+
+            Operation<Rating> op = new Operation<>("rate", new Rating(username, filename, crdts.getFileRatingsCRDT().getValue(filename)));
+            try {
+                broadcaster.broadcast(op);
+            } catch (IOException e) { throw new RuntimeException(e); }
+        }
     }
 
     public ClientMessage handleIncoming(byte[] data) {
@@ -106,9 +132,7 @@ public class PeerController {
 
         try {
             messageReceived = ClientMessage.fromBytes(data);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
+        } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
 

@@ -64,29 +64,26 @@ public class ServerOperations {
 
         String albumName = split[1];
 
-        Message m = Message.newBuilder().setType(Type.ALBUMEDIT).setAlbumName(albumName).build();
-        return m;
+        return Message.newBuilder().setType(Type.ALBUMEDIT).setAlbumName(albumName).build();
     }
 
     public static Message leaveAlbum(String data, int clock, int position, Album album){
-        String r = data.substring("/leaveAlbum".length());
+        String r = data.substring("/leaveAlbum".length());                 // todo: dangling album ?
         String[] split = r.split(" ");
 
         String albumName = split[1];
 
-        LeaveData lD = LeaveData.newBuilder()
+        LeaveData lData = LeaveData.newBuilder()
                 .setClock(clock)
                 .setPosition(position)
                 .build();
 
-        Message m = Message.newBuilder()
+        return Message.newBuilder()
                 .setType(Type.LEAVE)
                 .setAlbumName(albumName)
-                .setLeaveData(lD)
+                .setLeaveData(lData)
                 .setAlbum(Album.getInstance().toAlbumMessage())
                 .build();
-
-        return m;
     }
 
 }

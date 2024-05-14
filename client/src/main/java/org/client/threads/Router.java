@@ -48,7 +48,7 @@ public class Router extends Thread {
         String messageData = new String(message.data());
         if (this.server.handles(messageData)) {
             if (messageData.startsWith("leaveAlbum")){
-                // Check if can leave
+                // Check if it can leave
                 if (!this.broadcaster.canLeave()){
                     System.out.println("Cannot leave!");
                     return;
