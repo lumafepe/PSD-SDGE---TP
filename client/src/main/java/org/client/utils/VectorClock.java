@@ -32,7 +32,7 @@ public class VectorClock implements Serializable {
     }
 
     public void setClockPosition(int clockPosition, int value){
-        this.clock.add(clockPosition, value);
+        this.clock.set(clockPosition, value);
     }
 
     public void merge(VectorClock other) {

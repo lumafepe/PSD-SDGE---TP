@@ -66,6 +66,7 @@ public class PeerManagementController {
                 System.out.println("Inform Join received");
                 String newPeerIdentity = message.identity();
                 this.network.addUser(newPeerIdentity);
+                this.broadcaster.addToVector(message.position(), message.clock());
             }
             case "state" -> {
                 System.out.println("State received");
