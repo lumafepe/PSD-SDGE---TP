@@ -12,7 +12,7 @@ public class ORset<T> implements Serializable {
     private HashMap<T, Set<VersionVector>> map;
     private int counter;
 
-    public ORset(){
+    public ORset() {
         map = new HashMap<>();
         counter = 0;
     }

@@ -1,6 +1,7 @@
 package org.client.crdts;
 
 import org.client.crdts.base.VersionVector;
+import org.client.crdts.records.Rating;
 import org.messages.central.AlbumMessage;
 import org.messages.central.Classification;
 import org.messages.central.File;
@@ -28,24 +29,13 @@ public class Album {
     private Album() {
         instance = this;
 
-        operationHandlers.put("addFile", (o) -> {
-            return crdts.filesCRDT.addElement(o.operation, ((Operation<File>)o).element, nodeId);
-        });
-
-        operationHandlers.put("removeFile", (o) -> {
-            return crdts.filesCRDT.removeElement(o.operation, ((Operation<File>)o).element);
-        });
-
-        operationHandlers.put("addUser", (o) -> {
-            return crdts.usersCRDT.addElement(o.operation, ((Operation<String>)o).element, nodeId);
-        });
-
-        operationHandlers.put("removeUser", (o) -> {
-            return crdts.usersCRDT.removeElement(o.operation, ((Operation<String>)o).element);
-        });
+        operationHandlers.put("addFile", (o) -> crdts.filesCRDT.addElement(o.operation, ((Operation<File>) o).element, nodeId));
+        operationHandlers.put("removeFile", (o) -> crdts.filesCRDT.removeElement(o.operation, ((Operation<File>) o).element));
+        operationHandlers.put("addUser", (o) -> crdts.usersCRDT.addElement(o.operation, ((Operation<String>) o).element, nodeId));
+        operationHandlers.put("removeUser", (o) -> crdts.usersCRDT.removeElement(o.operation, ((Operation<String>) o).element));
 
         operationHandlers.put("rate", (o) -> {
-            //return fileRatingsCRDT.applyAddRatingOperation(o);
+            crdts.fileRatingsCRDT.applyIncrementOperation((Operation<Rating>) o);
             return null;
         });
 
@@ -62,49 +52,56 @@ public class Album {
         return instance;
     }
 
-    public Operation handleOperation(Operation op) {
+    public Operation<?> handleOperation(Operation<?> op) {
         OperationMessage operationMessage = op.getOperationMessage();
         OperationHandler handler = this.operationHandlers.get(operationMessage.getOperation());
         return handler.handle(op);
-    } // todo: this is not right!
+    }
 
-    public void setFileRatingsCRDT(GOSet fileRatingsCRDT) {
+    public void setFileRatingsCRDT(GCounter fileRatingsCRDT) {
         this.crdts.fileRatingsCRDT = fileRatingsCRDT;
     }
 
-    public void setFilesCRDT(ORset filesCRDT) {
+    public void setFilesCRDT(ORset<File> filesCRDT) {
         this.crdts.filesCRDT = filesCRDT;
     }
 
     public void setUsers(List<String> users, String id){
-        this.crdts.usersCRDT = new ORset();
-        for (String user : users){
+        this.crdts.usersCRDT = new ORset<String>();
+        for (String user : users) {
             this.crdts.usersCRDT.insert(user, new VersionVector(id, 0));
         }
-
-        //this.usersCRDT.setUsers(users);
+        // this.usersCRDT.setUsers(users);
     }
 
     public void setFiles(List<File> files, String id){
-        this.crdts.filesCRDT = new ORset();
+        this.crdts.filesCRDT = new ORset<File>();
         for (File file : files){
             this.crdts.filesCRDT.insert(file, new VersionVector(id, 0));
         }
     }
 
-    public void setUsersCRDT(ORset usersCRDT) {
+    public void setVotersCRDT(GOSet votersCRDT) {
+        this.crdts.fileVotersCRDT = votersCRDT;
+    }
+
+    public void setUsersCRDT(ORset<String> usersCRDT) {
         this.crdts.usersCRDT = usersCRDT;
     }
 
-    public GOSet getFileRatingsCRDT() {
+    public GOSet getVotersCRDT() {
+        return this.crdts.fileVotersCRDT;
+    }
+
+    public GCounter getFileRatingsCRDT() {
         return crdts.fileRatingsCRDT;
     }
 
-    public ORset getFilesCRDT() {
+    public ORset<File> getFilesCRDT() {
         return crdts.filesCRDT;
     }
 
-    public ORset getUsersCRDT() {
+    public ORset<String> getUsersCRDT() {
         return crdts.usersCRDT;
     }
 
