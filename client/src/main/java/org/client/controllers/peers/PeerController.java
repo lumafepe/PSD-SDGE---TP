@@ -18,7 +18,7 @@ public class PeerController {
     private static final Logger logger = LogManager.getLogger();
 
     private static final List<String> operations = Arrays.asList(
-            "/addFile", "/removeFile", "/addUser", "/removeUser", "/chat", "/showAlbum", "/rate");
+            "/addFile", "/addUser", "/removeUser", "/chat", "/showAlbum", "/rate");
 
     private final Broadcaster broadcaster;
     private final Album crdts = Album.getInstance();
@@ -46,21 +46,6 @@ public class PeerController {
             String content = restSplit[2];
 
             Operation o = new Operation("addFile", fileName);
-            Operation newOp = crdts.handleOperation(o);
-
-            try {
-                broadcaster.broadcast(newOp);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        if (data.startsWith("/removeFile")) {
-            String rest = data.substring("/removeFile".length());
-            String[] restSplit = rest.split(" ");
-            String fileName = restSplit[1];
-
-            Operation o = new Operation("removeFile", fileName);
             Operation newOp = crdts.handleOperation(o);
 
             try {

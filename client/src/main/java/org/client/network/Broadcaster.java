@@ -93,8 +93,8 @@ public class Broadcaster {
         this.deliver(message);
     }
 
-    public void setVersion(VectorClock vc, int clock, int position){
-        VectorClock vectorClock = new VectorClock(position+1, position);
+    public void setVersion(VectorClock vc, int clock, int position) {
+        VectorClock vectorClock = new VectorClock(position + 1, position);
         vectorClock.setClockPosition(position, clock);
         this.version = vc;
         this.version.merge(vectorClock);
