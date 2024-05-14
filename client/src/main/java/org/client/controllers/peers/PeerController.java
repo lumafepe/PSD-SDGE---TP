@@ -28,7 +28,7 @@ public class PeerController {
     private static final Logger logger = LogManager.getLogger();
 
     private static final List<String> operations = Arrays.asList(
-            "/addFile", "/getFile", "/addUser", "/removeUser", "/chat", "/showAlbum", "/rate");
+            "/addFile", "/getFile", "/removeFile", "/addUser", "/removeUser", "/chat", "/showAlbum", "/rate");
 
     private final Broadcaster broadcaster;
     private final ServerController server;
@@ -63,6 +63,12 @@ public class PeerController {
             String[] split = data.substring("/getFile".length()).split(" ");
             handlers.getFile(split[1], split[2]);
                              //^filepath //^destination
+        }
+
+        if (data.startsWith("/removeFile")) {
+            String[] split = data.substring("/removeFile".length()).split(" ");
+            handlers.removeFile(split[1]);
+                                //^filename
         }
 
         if (data.startsWith("/addUser")) {
@@ -173,6 +179,17 @@ public class PeerController {
             }
 
             // todo: confirm this is correct
+        }
+
+        public void removeFile(String filename) {
+
+            Operation<String> o = new Operation<>("removeFile", filename);
+            Operation<File> crdtsOp = crdts.handleOperation(o);
+
+            try { broadcaster.broadcast(crdtsOp); }
+            catch (IOException e) { throw new RuntimeException(e); }
+
+            logger.info(String.format("successfully removed file '%s'", filename));
         }
 
         public void addUser(String username) {
