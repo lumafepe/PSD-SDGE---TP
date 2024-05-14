@@ -17,9 +17,10 @@ public class Network {
     private final ZMQ.Socket router = ctx.createSocket(SocketType.ROUTER);
 
     private List<String> users = new ArrayList<>();
+    private String myIdentity;
 
     public Network(String identity, String bindPort, List<String> users) {
-
+        this.myIdentity = identity; // Just For debugging
         this.router.bind(Network.BASE_ADDRESS + bindPort);
         this.router.setIdentity(identity.getBytes());
 
@@ -36,8 +37,15 @@ public class Network {
         router.send(message.toString(), 0);
     }
 
-    public void loopSend(byte[] data) {
+    public void  loopSend(byte[] data) {
         for (String identity : this.users) {
+            /*if (this.myIdentity.equals("6000") && identity.equals("6002")) {
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }*/
             router.sendMore(identity.getBytes());
             router.sendMore("");
             router.send(data, 0);
