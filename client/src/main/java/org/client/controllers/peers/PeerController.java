@@ -18,13 +18,12 @@ public class PeerController {
     private static final Logger logger = LogManager.getLogger();
 
     private static final List<String> operations = Arrays.asList(
-            "/addFile", "/removeFile", "/addUser", "/removeUser", "/chat", "/showAlbum");
+            "/addFile", "/removeFile", "/addUser", "/removeUser", "/chat", "/showAlbum", "/rate");
 
     private final Broadcaster broadcaster;
     private final Album crdts = Album.getInstance();
 
     public PeerController(Broadcaster broadcaster) {
-        // todo: add network for self operations
         this.broadcaster = broadcaster;
     }
 
@@ -114,6 +113,7 @@ public class PeerController {
             String filename = split[2];
 
             if (!crdts.getVotersCRDT().canRate(username)) {
+                logger.debug(String.format("blocked user '%s' from rating file '%s'", username, filename));
                 return; // if user already voted, then ignore rate request for filename
             }
 

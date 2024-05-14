@@ -12,8 +12,8 @@ import java.io.*;
 import java.util.*;
 
 @FunctionalInterface
-interface OperationHandler {
-    Operation handle(Operation op);
+interface OperationHandler<T> {
+    Operation<T> handle(Operation<T> op);
 }
 
 public class Album {
@@ -29,13 +29,18 @@ public class Album {
     private Album() {
         instance = this;
 
-        operationHandlers.put("addFile", (o) -> crdts.filesCRDT.addElement(o.operation, ((Operation<File>) o).element, nodeId));
-        operationHandlers.put("removeFile", (o) -> crdts.filesCRDT.removeElement(o.operation, ((Operation<File>) o).element));
-        operationHandlers.put("addUser", (o) -> crdts.usersCRDT.addElement(o.operation, ((Operation<String>) o).element, nodeId));
-        operationHandlers.put("removeUser", (o) -> crdts.usersCRDT.removeElement(o.operation, ((Operation<String>) o).element));
+        operationHandlers.put("addFile", (o) -> o.element instanceof File ? crdts.filesCRDT.addElement(o.operation, (File) o.element, nodeId) : null);
+
+        operationHandlers.put("removeFile", (o) -> o.element instanceof File ? crdts.filesCRDT.removeElement(o.operation, (File) o.element) : null);
+
+        operationHandlers.put("addUser", (o) -> o.element instanceof String ? crdts.usersCRDT.addElement(o.operation, (String) o.element, nodeId) : null);
+
+        operationHandlers.put("removeUser", (o) -> o.element instanceof String ? crdts.usersCRDT.removeElement(o.operation, (String) o.element) : null);
 
         operationHandlers.put("rate", (o) -> {
-            crdts.fileRatingsCRDT.applyIncrementOperation((Operation<Rating>) o);
+            if (o.element instanceof Rating) {
+                crdts.fileRatingsCRDT.applyIncrementOperation((Rating) o.element);
+            }
             return null;
         });
 
@@ -52,7 +57,7 @@ public class Album {
         return instance;
     }
 
-    public Operation<?> handleOperation(Operation<?> op) {
+    public Operation handleOperation(Operation op) {
         OperationMessage operationMessage = op.getOperationMessage();
         OperationHandler handler = this.operationHandlers.get(operationMessage.getOperation());
         return handler.handle(op);
@@ -66,7 +71,7 @@ public class Album {
         this.crdts.filesCRDT = filesCRDT;
     }
 
-    public void setUsers(List<String> users, String id){
+    public void setUsers(List<String> users, String id) {
         this.crdts.usersCRDT = new ORset<String>();
         for (String user : users) {
             this.crdts.usersCRDT.insert(user, new VersionVector(id, 0));
@@ -74,9 +79,9 @@ public class Album {
         // this.usersCRDT.setUsers(users);
     }
 
-    public void setFiles(List<File> files, String id){
+    public void setFiles(List<File> files, String id) {
         this.crdts.filesCRDT = new ORset<File>();
-        for (File file : files){
+        for (File file : files) {
             this.crdts.filesCRDT.insert(file, new VersionVector(id, 0));
         }
     }
@@ -105,23 +110,23 @@ public class Album {
         return crdts.usersCRDT;
     }
 
-    public void setCrdts(CRDTS crdts){
+    public void setCrdts(CRDTS crdts) {
         this.crdts = crdts;
     }
 
-    public CRDTS getCrdts(){
+    public CRDTS getCrdts() {
         return crdts;
     }
 
-    public void setNodeId(String nodeId){
+    public void setNodeId(String nodeId) {
         this.nodeId = nodeId;
     }
 
-    public String toString(){
+    public String toString() {
         return this.crdts.usersCRDT.toString();
     }
 
-    public AlbumMessage toAlbumMessage(){
+    public AlbumMessage toAlbumMessage() {
         AlbumMessage.Builder b = AlbumMessage.newBuilder();
         b.addAllUsers(crdts.usersCRDT.elements());
         ArrayList<File> files = new ArrayList<>();

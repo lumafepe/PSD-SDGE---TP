@@ -30,10 +30,10 @@ public class GCounter implements Serializable {
         this.values.put(filename, 1);
     }
 
-    public void applyIncrementOperation(Operation<Rating> op) {
+    public void applyIncrementOperation(Rating r) {
 
-        String filename = op.element.fileName();
-        int rating = op.element.rating();
+        String filename = r.fileName();
+        int rating = r.rating();
 
         this.values.put(filename, this.values.get(filename) + rating);
     }

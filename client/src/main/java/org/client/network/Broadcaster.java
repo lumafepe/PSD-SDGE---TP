@@ -67,7 +67,7 @@ public class Broadcaster {
     }
     private void deliver(BroadcastMessage message) {
         this.version.increment(message.index());
-        for(VectorClock vc : this.waiting){
+        for (VectorClock vc : this.waiting){
             if (vc.getClock().get(vc.getId()) == this.version.getClock().get(vc.getId())){
                 this.waiting.remove(vc);
             }
