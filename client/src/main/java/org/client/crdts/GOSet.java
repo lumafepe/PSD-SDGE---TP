@@ -7,27 +7,33 @@ import java.io.Serializable;
 import java.util.HashSet;
 
 public class GOSet implements Serializable {
+
     private final HashSet<Rating> ratings;
 
     public GOSet() {
-        ratings = new HashSet<>();
+        this.ratings = new HashSet<>();
     }
 
     public HashSet<Rating> getRatings(){
-        return ratings;
+        return this.ratings;
     }
 
-    public boolean containsRating(Rating rating){
-        return ratings.contains(rating);
+    public boolean containsRating(Rating rating) {
+        return this.ratings.contains(rating);
     }
 
-    public Operation addRating(String fileName, String user, int rating) {
-        Operation ratingOperation = new Operation("rate", user, fileName, rating);
-        applyAddRatingOperation(ratingOperation);
-        return ratingOperation;
+    public boolean canRate(String user) {
+        return this.ratings.stream().map(Rating::user).anyMatch(user::equals);
     }
 
-    public void applyAddRatingOperation(Operation operation){
+    public Operation<Rating> addRating(String filename, String user, int rating) {
+        Operation<Rating> operation = new Operation<>("rate", user, filename, rating);
+
+        this.applyAddRatingOperation(operation);
+        return operation;
+    }
+
+    public void applyAddRatingOperation(Operation<Rating> operation){
         for (Rating rating : ratings) {
             if (rating.fileName().equals(operation.fileName) && rating.user().equals(operation.user)) {
                 return;
