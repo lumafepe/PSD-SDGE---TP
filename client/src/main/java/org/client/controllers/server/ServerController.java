@@ -76,7 +76,7 @@ public class ServerController {
                 this.clock = m.getNewClient().getClock();
                 this.position = m.getNewClient().getPosition();
             }
-            this.currentAlbum = data.substring("/editAlbum".length());
+            this.currentAlbum = data.substring("/editAlbum ".length());
             return m;
         }
 

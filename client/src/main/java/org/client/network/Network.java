@@ -31,6 +31,10 @@ public class Network {
         }
     }
 
+    public int totalUsers(){
+        return users.size();
+    }
+
     public void self(byte[] identity, Message message) {
         router.sendMore(identity);
         router.sendMore("");

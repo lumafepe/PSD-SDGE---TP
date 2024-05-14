@@ -47,15 +47,19 @@ public class Router extends Thread {
     private void routeMessage(IncomingMessage message) throws IOException {
         String messageData = new String(message.data());
         if (this.server.handles(messageData)) {
-            if (messageData.startsWith("leaveAlbum")){
+            if (messageData.startsWith("/leaveAlbum")){
                 // Check if can leave
                 if (!this.broadcaster.canLeave()){
                     System.out.println("Cannot leave!");
                     return;
                 }
-                ClientMessage leaveMessage = new ClientMessage("leave", null, null, this.bindPort, -1, -1, this.broadcaster.getVersion(), null);
-                this.network.loopSend(leaveMessage.asBytes());
-                return;
+
+                if (this.network.totalUsers() != 0){
+                    ClientMessage leaveMessage = new ClientMessage("leave", null, null, this.bindPort, -1, -1, this.broadcaster.getVersion(), null);
+                    this.network.loopSend(leaveMessage.asBytes());
+                    this.peerManagementController.setIsLeaving(true);
+                    return;
+                }
             }
             Message reply = this.server.handle(messageData);
 
@@ -82,6 +86,8 @@ public class Router extends Thread {
 
             if (this.peerManagementController.handlesPeerMessage(incMessage)){
                 String msgType = this.peerManagementController.handlePeerMessage(incMessage, this.server.clock, this.server.position);
+                Message m = Message.newBuilder().build();
+                this.network.self(message.identity(), m);
                 if (msgType.equals("join")){
                     // Must forward messages to new node
                     this.broadcaster.addForwardingNode(incMessage.identity());

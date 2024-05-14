@@ -116,7 +116,7 @@ public class PeerController {
     }
 
     public void receiveMessage(ClientMessage messageReceived){
-        if (!messageReceived.type().equals("join") && !messageReceived.type().equals("forward") && !messageReceived.type().equals("state") && !messageReceived.type().equals("informJoin") && !messageReceived.type().equals("leave")) {
+        if (!messageReceived.type().equals("join") && !messageReceived.type().equals("forward") && !messageReceived.type().equals("state") && !messageReceived.type().equals("informJoin") && !messageReceived.type().equals("leave") && !messageReceived.type().equals("leaveAck")) {
             broadcaster.receive(messageReceived.message());
         }
     }

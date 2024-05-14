@@ -14,7 +14,7 @@ import java.util.*;
 
 public class PeerManagementController {
     private static final List<String> peerMessages = Arrays.asList(
-            "join", "informJoin", "state", "leave", "forward");
+            "join", "informJoin", "state", "leave", "forward", "leaveAck");
     private Network network;
     private Album album;
     private String identity;
@@ -78,16 +78,17 @@ public class PeerManagementController {
                 // todo: must send also pending and keep forwarding messages
             }
             case "leave" -> {
+                System.out.println("Leave received");
                 if (this.isLeaving && Integer.parseInt(message.identity()) > Integer.parseInt(this.identity)){
                     this.isLeaving = false;
+                    System.out.println("Forgot about leaving");
                 }
                 this.broadcaster.addWaitingMsg(message.vc());
                 ClientMessage leaveAck = new ClientMessage("leaveAck", null, null, null, -1, -1, null, null);
                 this.network.send(leaveAck.asBytes(), message.identity());
-                this.acksReceived = new HashSet<>();
-                System.out.println("Leave");
             }
             case "leaveAck" -> {
+                System.out.println("leaveAck received");
                 if (isLeaving){
                     this.acksReceived.add(message.identity());
                     if (this.acksReceived.size() == this.network.size()) {
@@ -151,5 +152,9 @@ public class PeerManagementController {
 
             broadcaster.initialize(vectorPosition, vectorInitialValue);
         }
+    }
+
+    public void setIsLeaving(boolean b){
+        this.isLeaving = b;
     }
 }
