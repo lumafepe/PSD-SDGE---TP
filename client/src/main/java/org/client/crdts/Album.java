@@ -72,7 +72,7 @@ public class Album {
     }
 
     public void setUsers(List<String> users, String id) {
-        this.crdts.usersCRDT = new ORset<String>();
+        this.crdts.usersCRDT = new ORset<>();
         for (String user : users) {
             this.crdts.usersCRDT.insert(user, new VersionVector(id, 0));
         }
@@ -80,7 +80,7 @@ public class Album {
     }
 
     public void setFiles(List<File> files, String id) {
-        this.crdts.filesCRDT = new ORset<File>();
+        this.crdts.filesCRDT = new ORset<>();
         for (File file : files) {
             this.crdts.filesCRDT.insert(file, new VersionVector(id, 0));
         }
