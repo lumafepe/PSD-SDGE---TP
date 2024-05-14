@@ -103,14 +103,4 @@ public class DHTController {
         return status;
     }
 
-    public Status removeFile(String hash) throws IOException {
-
-        Status status;
-
-
-
-        return status;
-
-    }
-
 }

@@ -40,11 +40,12 @@ public class Router extends Thread {
         this.broadcaster = new Broadcaster(this.network, 0, 0);
 
         this.server = new ServerController(serverAddress, serverPort, "localhost", Integer.parseInt(bindPort));
-        this.peerController = new PeerController(this.broadcaster);
+        this.peerController = new PeerController(this.broadcaster, this.server);
         this.peerManagementController = new PeerManagementController(this.network, this.operations, this.bindPort, this.broadcaster, this.server);
     }
 
     private void routeMessage(IncomingMessage message) throws IOException {
+
         String messageData = new String(message.data());
         if (this.server.handles(messageData)) {
             if (messageData.startsWith("leaveAlbum")){
@@ -59,13 +60,13 @@ public class Router extends Thread {
             }
             Message reply = this.server.handle(messageData);
 
-            if (reply != null){
+            if (reply != null) {
                 if (this.peerManagementController.handlesServerReply(reply)) {
                     this.peerManagementController.handleEditReply(reply, this.broadcaster);
                 }
 
                 this.network.self(message.identity(), reply);
-                // todo: else log that an unknow operation has been sent
+                // todo: else log that an unknown operation has been sent
             }
         }
         else if (this.peerController.handles(messageData)){

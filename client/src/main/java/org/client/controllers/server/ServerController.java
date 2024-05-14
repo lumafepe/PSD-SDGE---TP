@@ -2,6 +2,7 @@ package org.client.controllers.server;
 
 import org.client.crdts.Album;
 import org.messages.central.*;
+import org.w3c.dom.Node;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -16,10 +17,13 @@ public class ServerController {
             "/register", "/login", "/logout", "/listAlbums", "/createAlbum", "/getAlbum", "/editAlbum", "/leaveAlbum");
 
     private Socket serverSocket = null;
+
     public int clock = 0;
     public int position = 0;
-    private String clientIp;
-    private int clientPort;
+
+    private final String clientIp;
+    private final int clientPort;
+
     private String currentAlbum;
 
     public ServerController(String address, int port, String clientIp, int clientPort) {
@@ -89,6 +93,16 @@ public class ServerController {
 
     public String getCurrentAlbum(){
         return this.currentAlbum;
+    }
+
+    public NodeInfo getWriteAddressFor(String hash) {
+        Message dhtNode = this.send(ServerOperations.getWriteAddress(hash));
+        return dhtNode.getNodeInfo();
+    }
+
+    public List<NodeInfo> getReadAddressFor(String hash) {
+        Message dhtNode = this.send(ServerOperations.getReadAddress(hash));
+        return dhtNode.getNodesInfosList();
     }
 
     public Message send(Message message) {
