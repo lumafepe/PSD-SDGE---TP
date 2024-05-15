@@ -1,5 +1,6 @@
 package org.client.crdts;
 
+import org.client.crdts.base.Operation;
 import org.client.crdts.records.Rating;
 
 import java.io.Serializable;

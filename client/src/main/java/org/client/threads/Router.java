@@ -50,7 +50,7 @@ public class Router extends Thread {
 
         String messageData = new String(message.data());
         if (this.server.handles(messageData)) {
-            if (messageData.startsWith("leaveAlbum")){
+            if (messageData.startsWith("/leaveAlbum")){
                 // Check if it can leave
                 if (!this.broadcaster.canLeave()){
                     System.out.println("Cannot leave!");
@@ -59,20 +59,12 @@ public class Router extends Thread {
 
                 if (this.network.totalUsers() != 0){
                     this.peerManagementController.setIsLeaving(true);
-                    new Thread(() -> {
-                        ClientMessage leaveMessage = new ClientMessage("leave", null, null, this.bindPort, -1, -1, this.broadcaster.getVersion(), null);
-                        try {
-                            try {
-                                if (this.bindPort.equals("6002"))
-                                    Thread.sleep(10000);
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                            this.network.loopSend(leaveMessage.asBytes());
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }).start();
+                    ClientMessage leaveMessage = new ClientMessage("leave", null, null, this.bindPort, -1, -1, this.broadcaster.getVersion(), null);
+                    try {
+                        this.network.loopSend(leaveMessage.asBytes());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
 
                     return;
                 }

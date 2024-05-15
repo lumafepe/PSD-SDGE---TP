@@ -111,7 +111,7 @@ public class PeerController {
 
         boolean receive = true;
 
-        List<String> exclude = Arrays.asList("join", "forward", "state", "informJoin", "leave");
+        List<String> exclude = Arrays.asList("join", "forward", "state", "informJoin", "leave", "leaveAck");
         for (String type : exclude) {
             receive = receive && !messageReceived.type().equals(type);
         }
