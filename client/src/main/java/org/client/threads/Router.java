@@ -43,7 +43,7 @@ public class Router extends Thread {
 
         this.server = new ServerController(serverAddress, serverPort, "localhost", Integer.parseInt(bindPort));
         this.peerController = new PeerController(this.broadcaster);
-        this.peerManagementController = new PeerManagementController(this.network, this.operations, this.bindPort, this.broadcaster, this.server);
+        this.peerManagementController = new PeerManagementController(this.network, this.operations, this.bindPort, this.broadcaster, this.server, this.peerController);
     }
 
     private void routeMessage(IncomingMessage message) throws IOException {
@@ -57,9 +57,22 @@ public class Router extends Thread {
                 }
 
                 if (this.network.totalUsers() != 0){
-                    ClientMessage leaveMessage = new ClientMessage("leave", null, null, this.bindPort, -1, -1, this.broadcaster.getVersion(), null);
-                    this.network.loopSend(leaveMessage.asBytes());
                     this.peerManagementController.setIsLeaving(true);
+                    new Thread(() -> {
+                        ClientMessage leaveMessage = new ClientMessage("leave", null, null, this.bindPort, -1, -1, this.broadcaster.getVersion(), null);
+                        try {
+                            try {
+                                if (this.bindPort.equals("6002"))
+                                    Thread.sleep(10000);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                            this.network.loopSend(leaveMessage.asBytes());
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }).start();
+
                     return;
                 }
             }
@@ -75,12 +88,12 @@ public class Router extends Thread {
                 // todo: else log that an unknow operation has been sent
             }
         }
-        else if (this.peerController.handles(messageData)){
+        else if (this.peerController.handles(messageData) && this.server.getCurrentAlbum() != null){
             this.peerController.handle(messageData);
             Message m = Message.newBuilder().build();
             this.network.self(message.identity(), m);
         }
-        else {
+        else if (this.server.getCurrentAlbum() != null){
             ClientMessage incMessage = this.peerController.handleIncoming(message.data());
             this.peerController.receiveMessage(incMessage);
             if (incMessage.type().equals("op")) {

@@ -41,7 +41,7 @@ public class Network {
         router.send(message.toString(), 0);
     }
 
-    public void  loopSend(byte[] data) {
+    public void loopSend(byte[] data) {
         for (String identity : this.users) {
             /*if (this.myIdentity.equals("6000") && identity.equals("6002")) {
                 try {

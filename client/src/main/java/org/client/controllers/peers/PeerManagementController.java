@@ -23,13 +23,15 @@ public class PeerManagementController {
     private String currentAlbum;
     private Set<String> acksReceived = new HashSet<>();
     private boolean isLeaving = false;
+    private PeerController peerController;
 
-    public PeerManagementController(Network network, Album album, String identity, Broadcaster broadcaster, ServerController server) {
+    public PeerManagementController(Network network, Album album, String identity, Broadcaster broadcaster, ServerController server, PeerController peerController) {
         this.network = network;
         this.album = album;
         this.identity = identity;
         this.broadcaster = broadcaster;
         this.server = server;
+        this.peerController = peerController;
     }
 
     public boolean handlesPeerMessage(ClientMessage message) {
@@ -86,6 +88,7 @@ public class PeerManagementController {
                 System.out.println("Leave received");
                 if (this.isLeaving && Integer.parseInt(message.identity()) > Integer.parseInt(this.identity)){
                     this.isLeaving = false;
+                    this.network.removeUser(message.identity());
                     System.out.println("Forgot about leaving");
                 }
                 this.broadcaster.addWaitingMsg(message.vc());

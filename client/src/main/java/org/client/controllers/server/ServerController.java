@@ -81,6 +81,7 @@ public class ServerController {
         }
 
         if (data.startsWith("/leaveAlbum")){
+            this.currentAlbum = null;
             return this.send(ServerOperations.leaveAlbum(data, this.clock, this.position, Album.getInstance()));
         }
 

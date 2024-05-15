@@ -31,74 +31,72 @@ public class PeerController {
     }
 
     public void handle(String data) {
+            if (data.startsWith("/addFile")) {
+                String rest = data.substring("/addFile".length());
+                String[] restSplit = rest.split(" ");
+                String fileName = restSplit[1];
+                String content = restSplit[2];
 
-        if (data.startsWith("/addFile")) {
-            String rest = data.substring("/addFile".length());
-            String[] restSplit = rest.split(" ");
-            String fileName = restSplit[1];
-            String content = restSplit[2];
-
-            Operation o = new Operation("addFile", fileName);
-            Operation newOp = crdts.handleOperation(o);
-
-            try {
-                broadcaster.broadcast(newOp);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        if (data.startsWith("/removeFile")) {
-            String rest = data.substring("/removeFile".length());
-            String[] restSplit = rest.split(" ");
-            String fileName = restSplit[1];
-
-            Operation o = new Operation("removeFile", fileName);
-            Operation newOp = crdts.handleOperation(o);
-
-            try {
-                broadcaster.broadcast(newOp);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        if (data.startsWith("/addUser")) {
-            String userName = data.substring("/addUser ".length());
-            try {
-                Operation o = new Operation("addUser", userName);
+                Operation o = new Operation("addFile", fileName);
                 Operation newOp = crdts.handleOperation(o);
-                broadcaster.broadcast(newOp);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
 
-        if (data.startsWith("/removeUser")) {
-            String userName = data.substring("/removeUser ".length());
-            try {
-                Operation o = new Operation("removeUser", userName);
+                try {
+                    broadcaster.broadcast(newOp);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if (data.startsWith("/removeFile")) {
+                String rest = data.substring("/removeFile".length());
+                String[] restSplit = rest.split(" ");
+                String fileName = restSplit[1];
+
+                Operation o = new Operation("removeFile", fileName);
                 Operation newOp = crdts.handleOperation(o);
-                broadcaster.broadcast(newOp);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+
+                try {
+                    broadcaster.broadcast(newOp);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
-        }
 
-        if (data.startsWith("/showAlbum")){
-            System.out.println(crdts.toString());
-        }
-
-
-
-        if (data.startsWith("/chat")) {
-            String message = data.substring("/chat ".length());
-            try {
-                broadcaster.broadcast(new Operation("chat", message));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            if (data.startsWith("/addUser")) {
+                String userName = data.substring("/addUser ".length());
+                try {
+                    Operation o = new Operation("addUser", userName);
+                    Operation newOp = crdts.handleOperation(o);
+                    broadcaster.broadcast(newOp);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
-        }
+
+            if (data.startsWith("/removeUser")) {
+                String userName = data.substring("/removeUser ".length());
+                try {
+                    Operation o = new Operation("removeUser", userName);
+                    Operation newOp = crdts.handleOperation(o);
+                    broadcaster.broadcast(newOp);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if (data.startsWith("/showAlbum")) {
+                System.out.println(crdts.toString());
+            }
+
+
+            if (data.startsWith("/chat")) {
+                String message = data.substring("/chat ".length());
+                try {
+                    broadcaster.broadcast(new Operation("chat", message));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
     }
 
     public ClientMessage handleIncoming(byte[] data) {
@@ -120,4 +118,5 @@ public class PeerController {
             broadcaster.receive(messageReceived.message());
         }
     }
+
 }
