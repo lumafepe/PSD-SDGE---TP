@@ -62,7 +62,7 @@ public class PeerController {
         if (data.startsWith("/getFile")) {
             String[] split = data.substring("/getFile".length()).split(" ");
             handlers.getFile(split[1], split[2]);
-                             //^filepath //^destination
+                             //^hash //^destination
         }
 
         if (data.startsWith("/removeFile")) {
@@ -150,30 +150,29 @@ public class PeerController {
             logger.info(String.format("successfully added file '%s' ('%s')", filename, filepath));
         }
 
-        public void getFile(String filepath, String to) {
+        public void getFile(String hash, String to) {
 
-            String hash = Hasher.digest(filepath);
             List<NodeInfo> dht = server.getReadAddressFor(hash);
 
             Status result;
             for (NodeInfo node : dht) {
 
                 try {
-                    result = DHTController.at(node.getIp(), node.getPort()).getFile(filepath, to);
+                    result = DHTController.at(node.getIp(), node.getPort()).getFile(hash, to);
                 } catch (IOException e) { throw new RuntimeException(e); }
 
                 if (result.equals(Status.HASH_NOT_FOUND)) {
-                    logger.warn(String.format("file '%s' not found in dht node %s:%d, trying next node...", filepath, node.getIp(), node.getPort()));
+                    logger.warn(String.format("file not found in dht node %s:%d, trying next node...", node.getIp(), node.getPort()));
                     continue;
                 }
 
                 if (result.equals(Status.IO_ERROR)) {
-                    logger.error(String.format("get file '%s' failed, dht status code: %s", filepath, result));
+                    logger.error(String.format("get file failed, dht status code: %s", result));
                     return;
                 }
 
                 if (result.equals(Status.SUCCESS)) {
-                    logger.info(String.format("successfully downloaded file at '%s' to '%s' from node %s:%d", filepath, to, node.getIp(), node.getPort()));
+                    logger.info(String.format("successfully downloaded file to '%s' from node %s:%d", to, node.getIp(), node.getPort()));
                     break;
                 }
             }
