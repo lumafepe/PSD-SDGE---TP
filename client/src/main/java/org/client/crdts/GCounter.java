@@ -26,8 +26,9 @@ public class GCounter implements Serializable {
     public void increment(String filename) {
         if (this.values.containsKey(filename)) {
             this.values.put(filename, this.values.get(filename) + 1);
+        } else {
+            this.values.put(filename, 1);
         }
-        this.values.put(filename, 1);
     }
 
     public void applyIncrementOperation(Rating r) {
