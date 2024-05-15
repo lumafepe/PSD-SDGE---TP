@@ -1,6 +1,5 @@
 package org.client.crdts;
 
-import org.client.crdts.base.Operation;
 import org.client.crdts.records.Rating;
 
 import java.io.Serializable;
@@ -12,11 +11,7 @@ public class GCounter implements Serializable {
     private final Map<String, Integer> values;
 
     public GCounter() {
-        this.values = new HashMap<String, Integer>();
-    }
-
-    public GCounter(HashMap<String, Integer> values) {
-        this.values = values;
+        this.values = new HashMap<>();
     }
 
     public int getValue(String filename) {

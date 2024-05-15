@@ -9,6 +9,6 @@ public class CRDTS implements Serializable {
     public GCounter fileRatingsCRDT = null;
     public GOSet fileVotersCRDT = null;
 
-    public ORset<File> filesCRDT = null; // todo: does not need init ?
+    public ORset<File> filesCRDT = null;
     public ORset<String> usersCRDT = null;
 }

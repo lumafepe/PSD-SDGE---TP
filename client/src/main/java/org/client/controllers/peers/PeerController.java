@@ -218,9 +218,8 @@ public class PeerController {
             int rateValue = Integer.parseInt(value);
 
             crdts.getFileRatingsCRDT().increment(filename, rateValue); // rate the file by incrementing the counter
-            crdts.getVotersCRDT().addRating(filename, username, crdts.getFileRatingsCRDT().getValue(filename)); // set user as already voted in the GOSet
+            Operation<Rating> op = crdts.getVotersCRDT().addRating(filename, username, crdts.getFileRatingsCRDT().getValue(filename)); // set user as already voted in the GOSet
 
-            Operation<Rating> op = new Operation<>("rate", new Rating(username, filename, crdts.getFileRatingsCRDT().getValue(filename)));
             try { broadcaster.broadcast(op); } catch (IOException e) { throw new RuntimeException(e); }
         }
 
