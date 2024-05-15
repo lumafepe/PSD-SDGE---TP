@@ -49,7 +49,7 @@ loginHandler(Socket, UserData,UserAddress) ->
         {ok} ->
             io:fwrite("Logged in user: ~p.\n", [Username]),
             answer_manager:success(Socket),
-            client_manager:loop(Socket,Username), % authenticated area
+            client_manager:loop(Socket,none,Username), % authenticated area
             authenticate(Socket);
         {error, TypeError, ErrorMsg} ->
             case TypeError of % tipos de erro possíveis de login
