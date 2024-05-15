@@ -12,23 +12,18 @@ public class GCounter implements Serializable {
     private final Map<String, Integer> values;
 
     public GCounter() {
-        this.values = new HashMap<String, Integer>();
-    }
-
-    public GCounter(HashMap<String, Integer> values) {
-        this.values = values;
+        this.values = new HashMap<>();
     }
 
     public int getValue(String filename) {
         return this.values.get(filename);
     }
 
-    public void increment(String filename) {
+    public void increment(String filename, int value) {
         if (this.values.containsKey(filename)) {
-            this.values.put(filename, this.values.get(filename) + 1);
-        } else {
-            this.values.put(filename, 1);
+            this.values.put(filename, this.values.get(filename) + value);
         }
+        else this.values.put(filename, value);
     }
 
     public void applyIncrementOperation(Rating r) {

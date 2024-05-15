@@ -92,8 +92,8 @@ public class PeerController {
 
         if (data.startsWith("/rate")) {
             String[] split = data.substring("/rate".length()).split(" ");
-            handlers.rate(split[1], split[2]);
-                          //^username //^filename
+            handlers.rate(split[1], split[2], split[3]);
+                          //^username //^filename //^value
         }
     }
 
@@ -208,17 +208,18 @@ public class PeerController {
             catch (IOException e) { throw new RuntimeException(e); }
         }
 
-        public void rate(String username, String filename) {
+        public void rate(String username, String filename, String value) {
 
             if (!crdts.getVotersCRDT().canRate(username)) {
                 logger.debug(String.format("blocked user '%s' from rating file '%s'", username, filename));
                 return; // if user already voted, then ignore rate request for filename
             }
 
-            crdts.getFileRatingsCRDT().increment(filename); // rate the file by incrementing the counter
-            crdts.getVotersCRDT().addRating(filename, username, crdts.getFileRatingsCRDT().getValue(filename)); // set user as already voted in the GOSet
+            int rateValue = Integer.parseInt(value);
 
-            Operation<Rating> op = new Operation<>("rate", new Rating(username, filename, crdts.getFileRatingsCRDT().getValue(filename)));
+            crdts.getFileRatingsCRDT().increment(filename, rateValue); // rate the file by incrementing the counter
+            Operation<Rating> op = crdts.getVotersCRDT().addRating(filename, username, crdts.getFileRatingsCRDT().getValue(filename)); // set user as already voted in the GOSet
+
             try { broadcaster.broadcast(op); } catch (IOException e) { throw new RuntimeException(e); }
         }
 
