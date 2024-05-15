@@ -67,7 +67,7 @@ public class Broadcaster {
     }
     private void deliver(BroadcastMessage message) {
         this.version.increment(message.index());
-        for(VectorClock vc : this.waiting){
+        for (VectorClock vc : this.waiting){
             if (vc.getClock().get(vc.getId()) == this.version.getClock().get(vc.getId())){
                 this.waiting.remove(vc);
             }
@@ -93,8 +93,8 @@ public class Broadcaster {
         this.deliver(message);
     }
 
-    public void setVersion(VectorClock vc, int clock, int position){
-        VectorClock vectorClock = new VectorClock(position+1, position);
+    public void setVersion(VectorClock vc, int clock, int position) {
+        VectorClock vectorClock = new VectorClock(position + 1, position);
         vectorClock.setClockPosition(position, clock);
         this.version = vc;
         this.version.merge(vectorClock);
