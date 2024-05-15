@@ -88,7 +88,7 @@ public class Router extends Thread {
                 // todo: else log that an unknown operation has been sent
             }
         }
-        else if (this.peerController.handles(messageData) && this.server.getCurrentAlbum() != null){
+        else if (this.peerController.handles(messageData) && this.server.getCurrentAlbum() != null) {
             this.peerController.handle(messageData);
             Message m = Message.newBuilder().build();
             this.network.self(message.identity(), m);

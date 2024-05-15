@@ -23,11 +23,11 @@ public class GCounter implements Serializable {
         return this.values.get(filename);
     }
 
-    public void increment(String filename) {
+    public void increment(String filename, int value) {
         if (this.values.containsKey(filename)) {
-            this.values.put(filename, this.values.get(filename) + 1);
+            this.values.put(filename, this.values.get(filename) + value);
         }
-        this.values.put(filename, 1);
+        else this.values.put(filename, value);
     }
 
     public void applyIncrementOperation(Rating r) {
