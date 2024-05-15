@@ -78,6 +78,11 @@ public class PeerManagementController {
                 // todo: must send also pending and keep forwarding messages
             }
             case "leave" -> {
+                /*try {
+                    Thread.sleep(15000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }*/
                 System.out.println("Leave received");
                 if (this.isLeaving && Integer.parseInt(message.identity()) > Integer.parseInt(this.identity)){
                     this.isLeaving = false;

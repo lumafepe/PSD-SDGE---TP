@@ -31,6 +31,8 @@ public class Router extends Thread {
     private String newNodeIdentity;
     private VectorClock receivedTimestamps;
 
+    private byte[] uiIdentity;
+
     public Router(String bindPort, String serverAddress, int serverPort) {
         this.bindPort = bindPort;
 
@@ -69,6 +71,7 @@ public class Router extends Thread {
                 }
 
                 this.network.self(message.identity(), reply);
+                this.uiIdentity = message.identity();
                 // todo: else log that an unknow operation has been sent
             }
         }
@@ -87,7 +90,7 @@ public class Router extends Thread {
             if (this.peerManagementController.handlesPeerMessage(incMessage)){
                 String msgType = this.peerManagementController.handlePeerMessage(incMessage, this.server.clock, this.server.position);
                 Message m = Message.newBuilder().build();
-                this.network.self(message.identity(), m);
+                this.network.self(this.uiIdentity, m);
                 if (msgType.equals("join")){
                     // Must forward messages to new node
                     this.broadcaster.addForwardingNode(incMessage.identity());
@@ -116,7 +119,7 @@ public class Router extends Thread {
                 this.routeMessage(message);
             }
         } catch (Exception e){
-            IncomingMessage m = new IncomingMessage("".getBytes(), "/logout".getBytes());
+            System.out.println("Error");
         }
     }
 }
