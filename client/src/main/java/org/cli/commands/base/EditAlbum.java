@@ -15,6 +15,8 @@ import java.util.regex.Pattern;
 public class EditAlbum implements Command {
 
     public final String re = "edit (\\S+)|edit help";
+
+    private String resetPrompt;
     private String prompt;
     private String album;
     private final String username;
@@ -24,6 +26,7 @@ public class EditAlbum implements Command {
     public EditAlbum(String prompt, String username) {
         this.prompt = prompt.strip();
         this.username = username;
+        this.resetPrompt = prompt.strip();
     }
 
     private EditCommand parseCommand(String command) {
@@ -73,7 +76,7 @@ public class EditAlbum implements Command {
         }
         System.out.printf(this.prompt + "[*] editing album '%s'\n", album.albumName);
 
-        this.prompt = String.format("%s[%s]", this.prompt, album.albumName);
+        this.prompt = String.format("%s[%s] ", this.prompt, album.albumName);
         this.album = album.albumName;
         this.setSubCommands();
 
@@ -92,6 +95,7 @@ public class EditAlbum implements Command {
 
             if (c.equalsIgnoreCase("leave")) {
                 this.subcommands.getFirst().execute(c);
+                this.prompt = this.resetPrompt;
                 break;
             }
 
