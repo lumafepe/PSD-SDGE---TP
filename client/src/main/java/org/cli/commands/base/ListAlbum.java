@@ -34,7 +34,7 @@ public class ListAlbum implements Command {
         Sender sender = Sender.getInstance();
         Message reply = sender.send("/listAlbums");
 
-        if (!reply.getType().equals(Type.SUCESIUM)) {
+        if (!reply.getType().equals(Type.ALBUMS)) {
             System.out.printf(this.prompt + "[-] an error occurred while trying to get albums: '%s'\n", reply.getErrorMessage().getMessage());
             return;
         }
