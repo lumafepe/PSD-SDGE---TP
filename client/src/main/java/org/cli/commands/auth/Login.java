@@ -68,7 +68,7 @@ public class Login implements Command {
         }
         System.out.printf(this.prompt + "[*] user '%s' logged in\n", credentials.username);
 
-        this.prompt = String.format("%s[%s]", this.prompt, credentials.username);
+        this.prompt = String.format("%s[%s] ", this.prompt, credentials.username);
 
         this.username = credentials.username;
         this.setSubCommands();
@@ -92,7 +92,7 @@ public class Login implements Command {
             }
 
             for (Command cmd : this.subcommands) {
-                if (cmd.matches(command)) {
+                if (cmd.matches(c)) {
                     cmd.execute(c);
                     success = true;
                     break;

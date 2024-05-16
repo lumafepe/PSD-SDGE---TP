@@ -14,7 +14,7 @@ public class Register implements Command {
     private final String prompt;
 
     public Register(String prompt) {
-        this.prompt = prompt;
+        this.prompt = prompt.strip();
     }
 
     private RegisterCommand parseCommand(String command) {
