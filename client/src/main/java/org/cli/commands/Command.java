@@ -2,6 +2,8 @@ package org.cli.commands;
 
 public interface Command {
 
-    boolean matches(String command);
-    void execute(String command, Object state);
+    public boolean matches(String command);
+    public void execute(String command);
+    public String usage();
+    public String help();
 }

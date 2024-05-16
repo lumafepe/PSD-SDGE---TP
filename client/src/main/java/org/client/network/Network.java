@@ -43,13 +43,6 @@ public class Network {
 
     public void loopSend(byte[] data) {
         for (String identity : this.users) {
-            /*if (this.myIdentity.equals("6000") && identity.equals("6002")) {
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }*/
             router.sendMore(identity.getBytes());
             router.sendMore("");
             router.send(data, 0);

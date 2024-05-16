@@ -81,9 +81,9 @@ public class PeerController {
             handlers.removeUser(username);
         }
 
-            if (data.startsWith("/showAlbum")) {
-                System.out.println(crdts.toString());
-            }
+        if (data.startsWith("/showAlbum")) {
+            System.out.println(crdts.toString());
+        }
 
         if (data.startsWith("/chat")) {
             String message = data.substring("/chat ".length());

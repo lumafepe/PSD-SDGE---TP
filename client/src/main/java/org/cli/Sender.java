@@ -6,6 +6,8 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+import java.io.IOException;
+
 public class Sender {
 
     private static Sender instance = null;
@@ -37,7 +39,13 @@ public class Sender {
     }
 
     public Message send(String message) {
-        return null;
+        this.requester.send(message.getBytes());
+
+        try {
+            return Message.parseFrom(this.requester.recv(0));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void setAddress(String address) {
@@ -58,23 +66,3 @@ public class Sender {
         this.identity = identity;
     }
 }
-
-/*
-new Router(args[0], "localhost", 4321).start();
-
-        Scanner sc = new Scanner(System.in);
-        try (ZContext context = new ZContext();
-             ZMQ.Socket sendCommand = context.createSocket(SocketType.REQ)) {
-            sendCommand.connect("tcp://localhost:" + args[0]);
-            sendCommand.setIdentity("main".getBytes());
-            while (sc.hasNextLine()) {
-                String line = sc.nextLine();
-                System.out.println("Send line to controller: " + line);
-                sendCommand.send(line.getBytes());
-
-                byte[] reply = sendCommand.recv(0);
-                System.out.println("Received reply from ROUTER: " + new String(reply));
-            }
-        }
-
- */

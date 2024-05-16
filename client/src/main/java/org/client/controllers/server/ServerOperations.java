@@ -6,12 +6,10 @@ import org.messages.central.*;
 public class ServerOperations {
 
     public static Message getWriteAddress(String hash) {
-        // todo: token is supposed to be a string not a uint64
         return Message.newBuilder().setType(Type.WRITE).setToken(hash).build();
     }
 
     public static Message getReadAddress(String hash) {
-        // todo: token is supposed to be a string not a uint64
         return Message.newBuilder().setType(Type.READ).setToken(hash).build();
     }
 
