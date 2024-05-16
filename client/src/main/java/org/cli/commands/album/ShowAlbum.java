@@ -36,9 +36,9 @@ public class ShowAlbum implements Command {
         }
 
         Sender sender = Sender.getInstance();
-        Message reply = sender.send("/getAlbum " + this.ctx);
+        Message reply = sender.send("/showAlbum " + this.ctx);
 
-        if (!reply.getType().equals(Type.SUCESIUM)) {
+        if (!reply.getType().equals(Type.ALBUM)) {
             System.out.printf(this.prompt + "[-] an error occurred while trying to show album '%s': '%s'\n", this.ctx, reply.getErrorMessage().getMessage());
             return;
         }
@@ -53,6 +53,7 @@ public class ShowAlbum implements Command {
         for (String user : album.getUsersList()) {
             System.out.printf(this.prompt + "[+] '%s' ", user);
         }
+        System.out.print("\n");
     }
 
     @Override
