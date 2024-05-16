@@ -17,6 +17,8 @@ import java.util.regex.Pattern;
 public class Login implements Command {
 
     public final String re = "login (\\S+) (\\S+)|login help";
+
+    private String resetPrompt;
     private String prompt;
     private String username;
 
@@ -24,6 +26,7 @@ public class Login implements Command {
 
     public Login(String prompt) {
         this.prompt = prompt.strip();
+        this.resetPrompt = prompt.strip();
     }
 
     private LoginCommand parseCommand(String command) {
@@ -88,6 +91,7 @@ public class Login implements Command {
 
             if (c.equalsIgnoreCase("logout")) {
                 this.subcommands.getFirst().execute(c);
+                this.prompt = this.resetPrompt;
                 break;
             }
 
