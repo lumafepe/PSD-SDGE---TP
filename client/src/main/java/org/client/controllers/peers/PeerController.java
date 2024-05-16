@@ -11,7 +11,10 @@ import org.client.messages.ClientMessage;
 import org.client.crdts.Album;
 import org.client.crdts.base.Operation;
 import org.client.utils.Hasher;
+import org.messages.central.AlbumMessage;
+import org.messages.central.Message;
 import org.messages.central.NodeInfo;
+import org.messages.central.Type;
 import org.messages.dht.Status;
 
 import java.io.IOException;
@@ -46,50 +49,58 @@ public class PeerController {
         return false;
     }
 
-    public void handle(String data) {
-
+    public Message handle(String data) {
+        Message m = null;
         if (data.startsWith("/addFile")) {
             String[] split = data.substring("/addFile".length()).split(" ");
+            m = Message.newBuilder().setType(Type.SUCESIUM).build();
             handlers.addFile(split[1], split[2]);
                              //^filename //^filepath
         }
 
         if (data.startsWith("/getFile")) {
             String[] split = data.substring("/getFile".length()).split(" ");
+            m = Message.newBuilder().setType(Type.SUCESIUM).build();
             handlers.getFile(split[1], split[2]);
                              //^hash //^destination
         }
 
         if (data.startsWith("/removeFile")) {
             String[] split = data.substring("/removeFile".length()).split(" ");
+            m = Message.newBuilder().setType(Type.SUCESIUM).build();
             handlers.removeFile(split[1]);
                                 //^filename
         }
 
         if (data.startsWith("/addUser")) {
             String username = data.substring("/addUser ".length());
+            m = Message.newBuilder().setType(Type.SUCESIUM).build();
             handlers.addUser(username);
         }
 
         if (data.startsWith("/removeUser")) {
             String username = data.substring("/removeUser ".length());
+            m = Message.newBuilder().setType(Type.SUCESIUM).build();
             handlers.removeUser(username);
         }
 
         if (data.startsWith("/showAlbum")) {
-            System.out.println(crdts.toString());
+            m = Message.newBuilder().setType(Type.ALBUM).setAlbum(this.crdts.toAlbumMessage()).build();
         }
 
         if (data.startsWith("/chat")) {
             String message = data.substring("/chat ".length());
+            m = Message.newBuilder().setType(Type.SUCESIUM).build();
             handlers.chat(message);
         }
 
         if (data.startsWith("/rate")) {
             String[] split = data.substring("/rate".length()).split(" ");
+            m = Message.newBuilder().setType(Type.SUCESIUM).build();
             handlers.rate(split[1], split[2], split[3]);
                           //^username //^filename //^value
         }
+        return m;
     }
 
     public ClientMessage handleIncoming(byte[] data) {

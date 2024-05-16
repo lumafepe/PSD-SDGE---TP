@@ -65,7 +65,8 @@ public class Router extends Thread {
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
-
+                    Message m = Message.newBuilder().setType(Type.SUCESIUM).build();
+                    this.network.self(message.identity(), m);
                     return;
                 }
             }
@@ -81,8 +82,7 @@ public class Router extends Thread {
             }
         }
         else if (this.peerController.handles(messageData) && this.server.getCurrentAlbum() != null) {
-            this.peerController.handle(messageData);
-            Message m = Message.newBuilder().setType(Type.SUCESIUM).build();
+            Message m = this.peerController.handle(messageData);
             this.network.self(message.identity(), m);
         }
         else if (this.server.getCurrentAlbum() != null){
@@ -113,7 +113,7 @@ public class Router extends Thread {
                 this.routeMessage(message);
             }
         } catch (Exception e){
-            System.out.println("Error");
+            e.printStackTrace();
         }
     }
 }

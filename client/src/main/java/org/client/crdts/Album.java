@@ -45,7 +45,7 @@ public class Album {
         });
 
         operationHandlers.put("chat", (o) -> {
-            System.out.println("[home][chat] " + o.element);
+            System.out.println("\n[home][chat] " + o.element);
             return null;
         });
     }
@@ -129,15 +129,10 @@ public class Album {
     public AlbumMessage toAlbumMessage() {
         AlbumMessage.Builder b = AlbumMessage.newBuilder();
         b.addAllUsers(crdts.usersCRDT.elements());
+        b.addAllFiles(crdts.filesCRDT.elements());
         ArrayList<File> files = new ArrayList<>();
         ArrayList<Classification> classifications = new ArrayList<>();
         classifications.add(Classification.newBuilder().setUsername("miguel").setValue(5).build());
-        files.add(File.newBuilder()
-                .setName("file1")
-                .setHash(123)
-                .addAllClassifications(classifications)
-                .build());
-        b.addAllFiles(files);
         return b.build();
     }
 

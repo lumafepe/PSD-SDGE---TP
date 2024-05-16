@@ -53,7 +53,7 @@ public class ShowAlbum implements Command {
         for (String user : album.getUsersList()) {
             System.out.printf(this.prompt + "[+] '%s' ", user);
         }
-        System.out.print("\n");
+        System.out.printf("\n");
     }
 
     @Override
