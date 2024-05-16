@@ -2,9 +2,6 @@ package org.cli.commands.album;
 
 import org.cli.Sender;
 import org.cli.commands.Command;
-import org.cli.commands.base.EditAlbum;
-import org.messages.central.AlbumMessage;
-import org.messages.central.File;
 import org.messages.central.Message;
 import org.messages.central.Type;
 
