@@ -67,7 +67,7 @@ public class EditAlbum implements Command {
         Sender sender = Sender.getInstance();
         Message reply = sender.send(String.format("/editAlbum %s", album.albumName));
 
-        if (!reply.getType().equals(Type.SUCESIUM)) {
+        if (reply.getType().equals(Type.ERRORREPLY)) {
             System.out.printf(this.prompt + "[-] an error occurred while trying to select album '%s' for edit: '%s'\n", album.albumName, reply.getErrorMessage().getMessage());
             return;
         }

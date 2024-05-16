@@ -54,7 +54,6 @@ public class CreateAlbum implements Command {
             return;
         }
         System.out.printf(this.prompt + "[*] album '%s' successfully created\n", album.albumName);
-
     }
 
     @Override
