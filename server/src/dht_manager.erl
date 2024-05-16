@@ -2,16 +2,25 @@
 -export([start/0,startEntrance/3, endEntrance/3, read/1, write/1]).
 
 
+sha1_to_int(SHA1Str) ->
+    SHA1Bin = hexstr_to_bin(SHA1Str),
+    <<Integer:160>> = SHA1Bin,
+    Integer.
+
+hexstr_to_bin(HexStr) ->
+    BinStr = hex:decode(HexStr),
+    <<BinStr/binary>>.
+
 binary_search(List, _, Low, High) when Low > High -> lists:nth(1, List) ;  % If low > high, return first.
 binary_search(List, Value, Low, High) ->
     Mid = (Low + High) div 2,
-    Val = lists:nth(Mid, List),
+    Val = sha1_to_int(lists:nth(Mid, List)),
     if 
         Val >= Value ->
-            Prev = lists:nth(Mid-1, List),
+            Prev = sha1_to_int(lists:nth(Mid-1, List)),
             if 
                 ( Val==Value or (Prev < Value)) -> 
-                    Val;
+                    lists:nth(Mid, List);
                 true ->
                     binary_search(List, Value, Low, Mid - 1)
             end;
@@ -27,7 +36,9 @@ findNearest(Hashdict, Hash, Write) ->
             not sets:is_empty(Selected)
         end
     ,Hashdict),
-    binary_search(orddict:fetch_keys(_Hashdict), Hash, 1, orddict:size(_Hashdict)).
+    binary_search(orddict:fetch_keys(_Hashdict), sha1_to_int(Hash), 1, orddict:size(_Hashdict)).
+
+
 
 start() ->
     Nodes = #{},
