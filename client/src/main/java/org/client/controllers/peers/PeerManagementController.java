@@ -46,7 +46,6 @@ public class PeerManagementController {
     public String handlePeerMessage(ClientMessage message, int myClock, int myPosition) throws IOException {
         switch (message.type()) {
             case "join" -> {
-                System.out.println("Join received");
                 String newPeerIdentity = message.identity();
                 int position = message.position();
                 int clockValue = message.clock();
@@ -54,6 +53,7 @@ public class PeerManagementController {
                 // Message informing other nodes that a new node has joined
                 ClientMessage informMessage = new ClientMessage("informJoin", null, null, newPeerIdentity, clockValue, position, null, null);
                 this.broadcaster.addToVector(position, clockValue);
+                this.broadcaster.addForwardingNode(message.identity());
                 this.network.loopSend(informMessage.asBytes());
 
                 this.network.addUser(newPeerIdentity);
@@ -65,13 +65,11 @@ public class PeerManagementController {
 
             }
             case "informJoin" -> {
-                System.out.println("Inform Join received");
                 String newPeerIdentity = message.identity();
                 this.network.addUser(newPeerIdentity);
                 this.broadcaster.addToVector(message.position(), message.clock());
             }
             case "state" -> {
-                System.out.println("State received");
                 CRDTS crdts = message.crdts();
                 this.album.setCrdts(crdts);
                 this.broadcaster.setVersion(message.vc(), myClock, myPosition);
@@ -80,23 +78,15 @@ public class PeerManagementController {
                 // todo: must send also pending and keep forwarding messages
             }
             case "leave" -> {
-                /*try {
-                    Thread.sleep(15000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }*/
-                System.out.println("Leave received");
+                this.network.removeUser(message.identity());
                 if (this.isLeaving && Integer.parseInt(message.identity()) > Integer.parseInt(this.identity)){
                     this.isLeaving = false;
-                    this.network.removeUser(message.identity());
-                    System.out.println("Forgot about leaving");
                 }
-                this.broadcaster.addWaitingMsg(message.vc());
+                //this.broadcaster.addWaitingMsg(message.vc());
                 ClientMessage leaveAck = new ClientMessage("leaveAck", null, null, null, -1, -1, null, null);
                 this.network.send(leaveAck.asBytes(), message.identity());
             }
             case "leaveAck" -> {
-                System.out.println("leaveAck received");
                 if (isLeaving){
                     this.acksReceived.add(message.identity());
                     if (this.acksReceived.size() == this.network.size()) {
@@ -106,7 +96,6 @@ public class PeerManagementController {
             }
             case "forward" -> {
                 this.broadcaster.receive(message.message());
-                System.out.println("Forward");
             }
 
         }

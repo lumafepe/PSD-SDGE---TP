@@ -45,7 +45,7 @@ public class Album {
         });
 
         operationHandlers.put("chat", (o) -> {
-            System.out.println("New message: " + o.element);
+            System.out.println("[home][chat] " + o.element);
             return null;
         });
     }

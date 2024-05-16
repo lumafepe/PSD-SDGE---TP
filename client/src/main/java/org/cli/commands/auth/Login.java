@@ -92,7 +92,7 @@ public class Login implements Command {
             }
 
             for (Command cmd : this.subcommands) {
-                if (cmd.matches(command)) {
+                if (cmd.matches(c)) {
                     cmd.execute(c);
                     success = true;
                     break;

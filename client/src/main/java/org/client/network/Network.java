@@ -38,7 +38,7 @@ public class Network {
     public void self(byte[] identity, Message message) {
         router.sendMore(identity);
         router.sendMore("");
-        router.send(message.toString(), 0);
+        router.send(message.toByteArray(), 0);
     }
 
     public void loopSend(byte[] data) {

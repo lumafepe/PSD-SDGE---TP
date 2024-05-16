@@ -6,11 +6,11 @@ import org.messages.central.*;
 public class ServerOperations {
 
     public static Message getWriteAddress(String hash) {
-        return Message.newBuilder().setType(Type.WRITE).setToken(hash).build();
+        return Message.newBuilder().setType(Type.WRITE).setToken(Long.parseLong(hash)).build();
     }
 
     public static Message getReadAddress(String hash) {
-        return Message.newBuilder().setType(Type.READ).setToken(hash).build();
+        return Message.newBuilder().setType(Type.READ).setToken(Long.parseLong(hash)).build();
     }
 
     public static Message register(String data) {

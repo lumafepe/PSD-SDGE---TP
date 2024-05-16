@@ -86,6 +86,11 @@ public class Broadcaster {
     }
 
     public void receive(BroadcastMessage message) {
+        try {
+            this.forward(message);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         if (!canDeliver(message)) {
             this.pending.add(message);
             return;
@@ -121,8 +126,8 @@ public class Broadcaster {
         this.receivedJoin.put(forwardingNode, list);
     }
 
-    public void forward(ClientMessage message) throws IOException {
-        VectorClock msgVC = message.message().version();
+    public void forward(BroadcastMessage message) throws IOException {
+        VectorClock msgVC = message.version();
         for (String forwardingNode : this.joinTimestamps.keySet()) {
             // Check if node that sent the message knows about this joining node
 
@@ -130,7 +135,7 @@ public class Broadcaster {
             VectorClock joinTimestamp = this.joinTimestamps.get(forwardingNode);
             if (!received){
                 if (msgVC.happensBefore(joinTimestamp)){
-                    ClientMessage forwardMessage = new ClientMessage("forward", message.message(), null, null, -1, -1, null, null);
+                    ClientMessage forwardMessage = new ClientMessage("forward", message, null, null, -1, -1, null, null);
                     this.network.send(forwardMessage.asBytes(), forwardingNode);
                 } else {
                     this.receivedJoin.get(forwardingNode).add(msgVC.getId(), true);

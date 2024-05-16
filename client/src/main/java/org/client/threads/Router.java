@@ -52,10 +52,10 @@ public class Router extends Thread {
         if (this.server.handles(messageData)) {
             if (messageData.startsWith("/leaveAlbum")){
                 // Check if it can leave
-                if (!this.broadcaster.canLeave()){
+                /*if (!this.broadcaster.canLeave()){
                     System.out.println("Cannot leave!");
                     return;
-                }
+                }*/
 
                 if (this.network.totalUsers() != 0){
                     this.peerManagementController.setIsLeaving(true);
@@ -82,27 +82,17 @@ public class Router extends Thread {
         }
         else if (this.peerController.handles(messageData) && this.server.getCurrentAlbum() != null) {
             this.peerController.handle(messageData);
-            Message m = Message.newBuilder().build();
+            Message m = Message.newBuilder().setType(Type.SUCESIUM).build();
             this.network.self(message.identity(), m);
         }
         else if (this.server.getCurrentAlbum() != null){
             ClientMessage incMessage = this.peerController.handleIncoming(message.data());
             this.peerController.receiveMessage(incMessage);
-            if (incMessage.type().equals("op")) {
-                this.broadcaster.forward(incMessage);
-            }
 
             if (this.peerManagementController.handlesPeerMessage(incMessage)){
                 String msgType = this.peerManagementController.handlePeerMessage(incMessage, this.server.clock, this.server.position);
-                Message m = Message.newBuilder().build();
+                Message m = Message.newBuilder().setType(Type.SUCESIUM).build();
                 this.network.self(this.uiIdentity, m);
-                if (msgType.equals("join")){
-                    // Must forward messages to new node
-                    this.broadcaster.addForwardingNode(incMessage.identity());
-
-                    // this.joinTimestamp = this.broadcaster.getVersion();
-                    // this.newNodeIdentity = incMessage.identity();
-                }
             }
         }
 
@@ -120,7 +110,6 @@ public class Router extends Thread {
         try {
             while (true) {
                 IncomingMessage message = this.network.recv();
-                System.out.println("received from client " + new String(message.identity()));
                 this.routeMessage(message);
             }
         } catch (Exception e){

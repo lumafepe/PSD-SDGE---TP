@@ -9,9 +9,9 @@ public class Main {
 
         Sender router = Sender.getInstance();
 
-        router.setIdentity(String.valueOf(System.currentTimeMillis()));
+        router.setIdentity(args[0]);
         router.setAddress("localhost");
-        router.setPort(9090);
+        router.setPort(4321);
 
         router.setup();
 

@@ -33,6 +33,8 @@ public class Sender {
     public void setup() {
         ZContext ctx = new ZContext();
         this.requester = ctx.createSocket(SocketType.REQ);
+        this.requester.connect("tcp://localhost:" + this.identity);
+        this.requester.setIdentity(this.identity.getBytes());
 
         this.router = new Router(identity, address, port);
         this.router.start();
