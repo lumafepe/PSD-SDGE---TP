@@ -14,15 +14,16 @@ public class Network {
     private static final String BASE_ADDRESS = "tcp://localhost:";
 
     private final ZContext ctx = new ZContext();
-    private final ZMQ.Socket router = ctx.createSocket(SocketType.ROUTER);
+    private ZMQ.Socket router;
 
     private List<String> users = new ArrayList<>();
     private String myIdentity;
 
     public Network(String identity, String bindPort, List<String> users) {
         this.myIdentity = identity; // Just For debugging
-        this.router.bind(Network.BASE_ADDRESS + bindPort);
+        this.router = ctx.createSocket(SocketType.ROUTER);
         this.router.setIdentity(identity.getBytes());
+        this.router.bind(Network.BASE_ADDRESS + bindPort);
 
         this.users = users;
 
@@ -59,6 +60,7 @@ public class Network {
         if (!this.users.contains(port)) {
             this.users.add(port);
             router.connect(Network.BASE_ADDRESS + port);
+
         }
     }
 

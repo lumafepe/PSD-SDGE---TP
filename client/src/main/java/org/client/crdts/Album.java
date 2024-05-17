@@ -1,6 +1,7 @@
 package org.client.crdts;
 
 import org.client.crdts.base.VersionVector;
+import org.client.crdts.records.FileRecord;
 import org.client.crdts.records.Rating;
 import org.messages.central.AlbumMessage;
 import org.messages.central.Classification;
@@ -29,9 +30,16 @@ public class Album {
     private Album() {
         instance = this;
 
-        operationHandlers.put("addFile", (o) -> o.element instanceof File ? crdts.filesCRDT.addElement(o.operation, (File) o.element, nodeId) : null);
+        operationHandlers.put("addFile", (o) -> {
+            if (o.element.getClass().equals(FileRecord.class)) {
+                return crdts.filesCRDT.addElement(o.operation, (FileRecord) o.element, nodeId);
+            }
+            else {
+                return null;
+            }
+        });
 
-        operationHandlers.put("removeFile", (o) -> o.element instanceof File ? crdts.filesCRDT.removeElement(o.operation, (File) o.element) : null);
+        operationHandlers.put("removeFile", (o) -> o.element instanceof FileRecord ? crdts.filesCRDT.removeElement(o.operation, (FileRecord) o.element) : null);
 
         operationHandlers.put("addUser", (o) -> o.element instanceof String ? crdts.usersCRDT.addElement(o.operation, (String) o.element, nodeId) : null);
 
@@ -67,7 +75,7 @@ public class Album {
         this.crdts.fileRatingsCRDT = fileRatingsCRDT;
     }
 
-    public void setFilesCRDT(ORset<File> filesCRDT) {
+    public void setFilesCRDT(ORset<FileRecord> filesCRDT) {
         this.crdts.filesCRDT = filesCRDT;
     }
 
@@ -79,9 +87,9 @@ public class Album {
         // this.usersCRDT.setUsers(users);
     }
 
-    public void setFiles(List<File> files, String id) {
+    public void setFiles(List<FileRecord> files, String id) {
         this.crdts.filesCRDT = new ORset<>();
-        for (File file : files) {
+        for (FileRecord file : files) {
             this.crdts.filesCRDT.insert(file, new VersionVector(id, 0));
         }
     }
@@ -102,7 +110,7 @@ public class Album {
         return crdts.fileRatingsCRDT;
     }
 
-    public ORset<File> getFilesCRDT() {
+    public ORset<FileRecord> getFilesCRDT() {
         return crdts.filesCRDT;
     }
 
@@ -129,8 +137,11 @@ public class Album {
     public AlbumMessage toAlbumMessage() {
         AlbumMessage.Builder b = AlbumMessage.newBuilder();
         b.addAllUsers(crdts.usersCRDT.elements());
-        b.addAllFiles(crdts.filesCRDT.elements());
         ArrayList<File> files = new ArrayList<>();
+        for (FileRecord f : crdts.filesCRDT.elements()){
+            files.add(File.newBuilder().setName(f.name()).setHash(f.hash()).build());
+        }
+        b.addAllFiles(files);
         ArrayList<Classification> classifications = new ArrayList<>();
         classifications.add(Classification.newBuilder().setUsername("miguel").setValue(5).build());
         return b.build();

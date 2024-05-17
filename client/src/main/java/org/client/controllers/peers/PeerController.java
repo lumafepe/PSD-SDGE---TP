@@ -5,7 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.client.controllers.DHTController;
 import org.client.controllers.server.ServerController;
-import org.client.crdts.records.File;
+import org.client.crdts.records.FileRecord;
 import org.client.crdts.records.Rating;
 import org.client.network.Broadcaster;
 import org.client.messages.ClientMessage;
@@ -144,8 +144,8 @@ public class PeerController {
                 return;
             }
 
-            Operation<String> o = new Operation<>("addFile", filename);
-            Operation<File> crdtsOp = crdts.handleOperation(o);
+            Operation<FileRecord> o = new Operation<>("addFile", new FileRecord(filename, hash));
+            Operation<FileRecord> crdtsOp = crdts.handleOperation(o);
 
             try { broadcaster.broadcast(crdtsOp); }
             catch (IOException e) { throw new RuntimeException(e); }
@@ -186,7 +186,7 @@ public class PeerController {
         public void removeFile(String filename) {
 
             Operation<String> o = new Operation<>("removeFile", filename);
-            Operation<File> crdtsOp = crdts.handleOperation(o);
+            Operation<FileRecord> crdtsOp = crdts.handleOperation(o);
 
             try { broadcaster.broadcast(crdtsOp); }
             catch (IOException e) { throw new RuntimeException(e); }

@@ -50,15 +50,15 @@ public class Router extends Thread {
 
         String messageData = new String(message.data());
         if (this.server.handles(messageData)) {
-            if (messageData.startsWith("/leaveAlbum")){
+            if (messageData.startsWith("/leaveAlbum") && this.network.totalUsers() != 0){
                 // Check if it can leave
                 /*if (!this.broadcaster.canLeave()){
                     System.out.println("Cannot leave!");
                     return;
                 }*/
 
-                if (this.network.totalUsers() != 0){
-                    this.peerManagementController.setIsLeaving(true);
+                //if (this.network.totalUsers() != 0){
+                    //this.peerManagementController.setIsLeaving(true);
                     ClientMessage leaveMessage = new ClientMessage("leave", null, null, this.bindPort, -1, -1, this.broadcaster.getVersion(), null);
                     try {
                         this.network.loopSend(leaveMessage.asBytes());
@@ -68,7 +68,7 @@ public class Router extends Thread {
                     Message m = Message.newBuilder().setType(Type.SUCESIUM).build();
                     this.network.self(message.identity(), m);
                     return;
-                }
+                //}
             }
             Message reply = this.server.handle(messageData);
 

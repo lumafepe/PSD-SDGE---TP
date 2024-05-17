@@ -3,6 +3,7 @@ package org.client.controllers.peers;
 import org.client.controllers.server.ServerController;
 import org.client.crdts.Album;
 import org.client.crdts.CRDTS;
+import org.client.crdts.records.FileRecord;
 import org.client.network.Broadcaster;
 import org.client.network.Network;
 import org.client.messages.ClientMessage;
@@ -119,9 +120,9 @@ public class PeerManagementController {
             this.album.setUsers(users, this.identity);
 
             // Get files
-            List<File> files = new ArrayList<>();
+            List<FileRecord> files = new ArrayList<>();
             for (File f : album.getFilesList()){
-                files.add(f);
+                files.add(new FileRecord(f.getName(), f.getHash()));
             }
             this.album.setFiles(files, this.identity);
         }
