@@ -43,9 +43,8 @@ public class ShowAlbum implements Command {
 
         System.out.printf("%s[*] album files:\n", this.prompt);
         for (File file : album.getFilesList()) {
-            int soma = 0;
-            soma = file.getClassificationsList().stream().map(Classification::getValue).reduce(0, (a, b) -> a + b);
-            System.out.printf(this.prompt + "[+] %s %d\n", file.getName(), soma);
+            int ratingSum = file.getClassificationsList().stream().map(Classification::getValue).reduce(0, Integer::sum);
+            System.out.printf(this.prompt + "[+] %s - %d votes\n", file.getName(), ratingSum);
         }
 
         System.out.printf(this.prompt + "[*] active users:\n");
@@ -53,7 +52,7 @@ public class ShowAlbum implements Command {
             System.out.printf(this.prompt + "[+] '%s' ", user);
         }
 
-        System.out.printf("\n");
+        System.out.print("\n");
     }
 
     @Override
