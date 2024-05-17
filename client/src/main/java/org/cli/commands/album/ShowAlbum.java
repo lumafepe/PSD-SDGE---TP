@@ -2,10 +2,7 @@ package org.cli.commands.album;
 
 import org.cli.Sender;
 import org.cli.commands.Command;
-import org.messages.central.AlbumMessage;
-import org.messages.central.File;
-import org.messages.central.Message;
-import org.messages.central.Type;
+import org.messages.central.*;
 
 import java.util.regex.Pattern;
 
@@ -46,13 +43,16 @@ public class ShowAlbum implements Command {
 
         System.out.printf("%s[*] album files:\n", this.prompt);
         for (File file : album.getFilesList()) {
-            System.out.printf(this.prompt + "[+] %s\n", file.getName());
+            int soma = 0;
+            soma = file.getClassificationsList().stream().map(Classification::getValue).reduce(0, (a, b) -> a + b);
+            System.out.printf(this.prompt + "[+] %s %d\n", file.getName(), soma);
         }
 
         System.out.printf(this.prompt + "[*] active users:\n");
         for (String user : album.getUsersList()) {
             System.out.printf(this.prompt + "[+] '%s' ", user);
         }
+
         System.out.printf("\n");
     }
 

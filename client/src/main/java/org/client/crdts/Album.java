@@ -138,12 +138,14 @@ public class Album {
         AlbumMessage.Builder b = AlbumMessage.newBuilder();
         b.addAllUsers(crdts.usersCRDT.elements());
         ArrayList<File> files = new ArrayList<>();
+        List<Classification> classifications = new ArrayList<>();
         for (FileRecord f : crdts.filesCRDT.elements()){
-            files.add(File.newBuilder().setName(f.name()).setHash(f.hash()).build());
+            files.add(File.newBuilder()
+                    .setName(f.name())
+                    .setHash(f.hash())
+                    .addAllClassifications(crdts.fileVotersCRDT.getFileRatings(f.name())).build());
         }
         b.addAllFiles(files);
-        ArrayList<Classification> classifications = new ArrayList<>();
-        classifications.add(Classification.newBuilder().setUsername("miguel").setValue(5).build());
         return b.build();
     }
 

@@ -2,9 +2,14 @@ package org.client.crdts;
 
 import org.client.crdts.base.Operation;
 import org.client.crdts.records.Rating;
+import org.messages.central.Classification;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class GOSet implements Serializable {
 
@@ -23,7 +28,7 @@ public class GOSet implements Serializable {
     }
 
     public boolean canRate(String user) {
-        return this.ratings.stream().map(Rating::user).anyMatch(user::equals);
+        return this.ratings.stream().map(Rating::user).noneMatch(user::equals);
     }
 
     public Operation<Rating> addRating(String filename, String user, int rating) {
@@ -40,6 +45,13 @@ public class GOSet implements Serializable {
             }
         }
         this.ratings.add(new Rating(operation.user, operation.fileName, operation.rating));
+    }
+
+    public Set<Classification> getFileRatings(String fileName){
+        return this.ratings.stream()
+                .filter(r -> r.fileName().equals(fileName))
+                .map(rat -> Classification.newBuilder().setValue(rat.rating()).setUsername(rat.user()).build())
+                .collect(Collectors.toSet());
     }
 }
 

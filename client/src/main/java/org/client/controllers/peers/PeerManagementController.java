@@ -1,9 +1,9 @@
 package org.client.controllers.peers;
 
 import org.client.controllers.server.ServerController;
-import org.client.crdts.Album;
-import org.client.crdts.CRDTS;
+import org.client.crdts.*;
 import org.client.crdts.records.FileRecord;
+import org.client.crdts.records.Rating;
 import org.client.network.Broadcaster;
 import org.client.network.Network;
 import org.client.messages.ClientMessage;
@@ -120,11 +120,25 @@ public class PeerManagementController {
             this.album.setUsers(users, this.identity);
 
             // Get files
+            GCounter gc = new GCounter();
+            GOSet goset = new GOSet();
             List<FileRecord> files = new ArrayList<>();
             for (File f : album.getFilesList()){
                 files.add(new FileRecord(f.getName(), f.getHash()));
+                // counters for classifications
+                for (Classification c : f.getClassificationsList()){
+                    gc.increment(f.getName(), c.getValue());
+                    goset.addRating(f.getName(), c.getUsername(), c.getValue());
+                }
             }
             this.album.setFiles(files, this.identity);
+
+            // Get ratings
+            // Gcounter
+            this.album.setFileRatingsCRDT(gc);
+
+            // GoSet
+            this.album.setVotersCRDT(goset);
         }
 
         // When he is not the first in the session
