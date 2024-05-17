@@ -55,7 +55,7 @@ parser = argparse.ArgumentParser(
                     epilog='generator')
 
 
-parser.add_argument('-c', '--clients',choices=range(0, 999),type=int,help='number of clients to create')
+parser.add_argument('-c', '--clients',choices=range(0, 999),type=int,help='number of clients to create',default=1)
 parser.add_argument('-d', '--dht',choices=range(0, 999),type=int,help='number of dht nodes to create',default=1)
 
 args = parser.parse_args()
@@ -81,9 +81,10 @@ genClient = lambda x: (f'client{x}',{
                 'dockerfile': 'Dockerfile'
             },
     'networks': [ 'lost'],
+    'ports': [ f'{5000+x}:{5000+x}' ],
     'depends_on': ['central_server'],
     'environment': [
-        f"ID={x}",
+        f"ID={5000+x}",
         f"IP=central_server"
     ]
 })
