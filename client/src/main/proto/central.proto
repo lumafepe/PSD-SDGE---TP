@@ -73,7 +73,7 @@ message Classification {
 
 message File {
   string name = 1;
-  uint64 hash = 2;
+  string hash = 2;
   repeated Classification classifications = 3;
 }
 
