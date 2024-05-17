@@ -58,7 +58,7 @@ public class Register implements Command {
 
     @Override
     public String usage() {
-        return this.prompt + "[?] register <username> <password>\n";
+        return this.prompt + "[?] register <username> <password> : register a new user into the application\n";
     }
 
     @Override

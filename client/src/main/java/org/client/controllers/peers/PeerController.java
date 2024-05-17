@@ -17,6 +17,7 @@ import org.messages.central.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class PeerController {
 
@@ -59,7 +60,7 @@ public class PeerController {
             String[] split = data.substring("/getFile".length()).split(" ");
             m = Message.newBuilder().setType(Type.SUCESIUM).build();
             handlers.getFile(split[1], split[2]);
-                             //^hash //^destination
+                             //^filename //^destination
         }
 
         if (data.startsWith("/removeFile")) {
@@ -153,7 +154,21 @@ public class PeerController {
             logger.info(String.format("successfully added file '%s' ('%s')", filename, filepath));
         }
 
-        public void getFile(String hash, String to) {
+        private String getHashFromFilename(String filename) {
+            for (FileRecord file : crdts.getFilesCRDT().elements()) {
+                if (file.name().equals(filename)) {
+                    return file.hash();
+                }
+            }
+            return null;
+        }
+
+        public void getFile(String filename, String to) {
+
+            String hash = this.getHashFromFilename(filename);
+            if (hash == null) {
+                throw new RuntimeException(String.format("file '%s' does not exist within this album\n", filename));
+            }
 
             List<NodeIp> dht = server.getReadAddressFor(hash);
 
@@ -179,8 +194,6 @@ public class PeerController {
                     break;
                 }
             }
-
-            // todo: confirm this is correct
         }
 
         public void removeFile(String filename) {
