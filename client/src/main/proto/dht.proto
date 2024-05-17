@@ -1,0 +1,49 @@
+syntax = "proto3";
+package dht.messages;
+option java_multiple_files = true;
+
+service DHTService {
+  rpc read(ReadRequest) returns (stream ReadResponse);
+  rpc write(stream WriteRequest) returns (WriteResponse);
+  rpc transfer(TransferRequest) returns (stream WriteRequest);
+  rpc echoMsg(Message) returns (Message);
+}
+
+message ReadRequest {
+  string hash = 1;
+}
+
+message Message {
+  string data = 1;
+}
+
+message ReadResponse {
+  Status success = 1;
+  optional string message = 2;
+  bool moreData = 3;
+  int32 byteCount = 4;
+  bytes data = 5;
+}
+
+message TransferRequest {
+  string ip = 1;
+  int32 port = 2;
+  repeated int64 token = 3;
+}
+
+message WriteRequest {
+  string hash = 1;
+  int64 offset = 2;
+  bytes data = 3;
+}
+
+message WriteResponse {
+  Status success = 1;
+  optional string message = 2;
+}
+
+enum Status {
+  SUCCESS = 0;
+  HASH_NOT_FOUND = 1;
+  IO_ERROR = 2;
+}

@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package org.messages.central;
+option java_multiple_files = true;
+
+message Message {
+  Type type = 1;
+  optional UserData user_data = 2;
+  optional Address address = 14;
+  optional ErrorReply error_message = 3;
+  optional string album_name = 4;
+  optional Albums albums = 5;
+  optional AlbumMessage album = 6;
+  optional NodeInfo node_info = 7;
+  repeated NodeInfo nodes_infos = 8;
+  optional string token = 9;
+  repeated NodeIp nodes_ips = 10;
+  optional NewClient new_client = 11;
+  optional bool is_last = 12;
+  optional LeaveData leave_data = 13;
+}
+
+// C2S -> Client to Server
+// S2C -> Server to Client
+
+// Type -> IN Data | Out Data
+enum Type {
+  NONE=0;
+  SUCESIUM = 21; // S2C -> None
+  ERRORREPLY = 1; // S2C -> error_message
+  ALBUMS = 2; // S2C -> albums
+  REGISTER = 3; // C2S -> user_data | {SUCESIUM | ERRORREPLY}
+  LOGIN = 4; // C2S -> {user_data && address} | {SUCESIUM | ERRORREPLY}
+  LOGOUT = 5; // C2S -> None | {SUCESIUM | ERRORREPLY}
+  ALBUMSLIST = 6; // C2S -> None | ALBUMS
+  ALBUMCREATE = 7; // C2S -> album_name | {SUCESIUM | ERRORREPLY}
+  ALBUM = 8; // S2C -> album
+  ALBUMEDIT = 9; // C2S -> album_name | {ALBUM | ERRORREPLY | NEWCLIENT}
+  STARTENTRANCE = 10;  //C2S -> node_info | {ERRORREPLY | nodes}
+  ENDENTRANCE = 11; //C2S -> node_info | {SUCESIUM | ERRORREPLY}
+  NODESINFO = 12; // S2C -> nodes_infos
+  READ = 13; // C2S -> token | { ERRORREPLY | NODEIP }
+  WRITE = 14; // C2S -> token | { ERRORREPLY | NODEIP }
+  NODEIP = 15; // S2C -> nodes_ips
+  NEWCLIENT = 16; // S2C -> new_client
+  LEAVE = 19; // C2S -> {leave_data & album_name & album} | {ERRORREPLY | SUCESIUM}
+  EDITING = 20; // C2S -> album_name | {ERRORREPLY | SUCESIUM}
+}
+
+message Address {
+  string ip = 1;
+  uint32 port = 2;
+}
+
+message UserData {
+  string username = 1;
+  string password = 2;
+}
+
+message ErrorReply {
+  string message = 1;
+}
+
+message Albums {
+  repeated string names = 1;
+}
+
+
+message Classification {
+  string username = 1;
+  uint32 value = 2;
+}
+
+message File {
+  string name = 1;
+  uint64 hash = 2;
+  repeated Classification classifications = 3;
+}
+
+message Client {
+  string username = 1;
+  string ip = 2;
+  uint32 port = 3;
+}
+
+message NewClient {
+  repeated Client clients = 1;
+  uint32 clock = 2;
+  uint32 position = 3;
+}
+
+message LeaveData {
+  uint32 clock = 1;
+  uint32 position =2;
+}
+
+message AlbumMessage {
+  repeated File files = 1;
+  repeated string users = 2;
+}
+
+
+message NodeInfo{
+  string ip = 1;
+  uint32 port = 2;
+  repeated uint64 tokens = 3;
+}
+
+message NodeIp{
+  string ip = 1;
+  uint32 port = 2;
+}
