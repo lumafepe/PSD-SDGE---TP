@@ -3,6 +3,7 @@ package org.dht;
 import com.google.protobuf.Message;
 import dht.messages.*;
 import io.grpc.stub.StreamObserver;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.core.Flowable;
@@ -22,8 +23,8 @@ public class DHTService extends Rx3DHTServiceGrpc.DHTServiceImplBase {
 
     public Single<WriteResponse> write(Flowable<WriteRequest> requests) {
         return requests
-                .observeOn(Schedulers.io())
-                .map(this.controller::write)
+                .concatMap(req -> Flowable.just(this.controller.write(req)).subscribeOn(Schedulers.io()))
+                .observeOn(Schedulers.computation())
                 .reduce(this.controller::mergeWriteResponses)
                 .toSingle();
     }
