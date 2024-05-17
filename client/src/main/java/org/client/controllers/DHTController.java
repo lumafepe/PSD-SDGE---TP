@@ -1,8 +1,9 @@
 package org.client.controllers;
 
 import com.google.protobuf.ByteString;
-import org.messages.dht.*;
+import dht.messages.*;
 import io.grpc.ManagedChannelBuilder;
+import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -11,6 +12,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,33 +33,31 @@ public class DHTController {
         return new DHTController(serverAddress, serverPort);
     }
 
-    private static @NotNull Iterable<WriteRequest> readFile(String filepath) throws IOException {
+    public Flowable<WriteRequest> readFile(String path) {
+        String hash = Hasher.digest(path);
 
-        String fileHash = Hasher.digest(filepath);
-        List<WriteRequest> writeRequests = new ArrayList<>();
-
-        try (FileInputStream inputStream = new FileInputStream(filepath)) {
-
-            byte[] buffer = new byte[Hasher.BLOCK_SIZE];
-
-            int bytesRead;
-            long offset = 0;
-
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                WriteRequest req = WriteRequest
-                        .newBuilder()
-                        .setHash(fileHash)
-                        .setData(ByteString.copyFrom(buffer.clone()))
-                        .setOffset(offset)
-                        .build();
-
-                writeRequests.add(req);
-                offset += bytesRead;
+        return Flowable.create(sub -> {
+            try(FileInputStream stream = new FileInputStream(path)) {
+                long offset = 0;
+                int bytesRead;
+                byte[] buffer = new byte[4096];
+                while((bytesRead = stream.read(buffer)) != -1) {
+                    sub.onNext(WriteRequest.newBuilder()
+                            .setHash(hash)
+                            .setData(ByteString.copyFrom(buffer.clone()))
+                            .setOffset(offset)
+                            .build());
+                    offset += bytesRead;
+                }
+            } catch(FileNotFoundException e) {
+                //Log if needed
+            } catch (IOException e) {
+                //Log if needed
             }
-        }
-
-        return writeRequests;
+            sub.onComplete();
+        }, BackpressureStrategy.BUFFER);
     }
+
 
     public Status setFile(String filepath) throws IOException {
 
@@ -68,7 +68,7 @@ public class DHTController {
 
         var stub = Rx3DHTServiceGrpc.newRxStub(channel);
 
-        Status status = stub.write(Flowable.fromIterable(readFile(filepath)))
+        Status status = stub.write(readFile(filepath))
                 .map(WriteResponse::getSuccess)
                 .blockingGet();
 
@@ -96,7 +96,8 @@ public class DHTController {
                         file.write(m.getData().toByteArray());
                         return m.getSuccess();
                     })
-                    .blockingFirst();
+                    .reduce((r1, r2) -> (r1 != Status.SUCCESS) ? r1 : r2)
+                    .blockingGet();
         }
 
         channel.shutdown();

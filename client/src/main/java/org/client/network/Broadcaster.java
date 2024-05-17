@@ -130,6 +130,8 @@ public class Broadcaster {
         VectorClock msgVC = message.version();
         for (String forwardingNode : this.joinTimestamps.keySet()) {
             // Check if node that sent the message knows about this joining node
+            if (this.receivedJoin.get(forwardingNode).size() <= msgVC.getLength())
+                continue;
 
             boolean received = this.receivedJoin.get(forwardingNode).get(msgVC.getId());
             VectorClock joinTimestamp = this.joinTimestamps.get(forwardingNode);

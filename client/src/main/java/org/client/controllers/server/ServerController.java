@@ -96,14 +96,15 @@ public class ServerController {
         return this.currentAlbum;
     }
 
-    public NodeInfo getWriteAddressFor(String hash) {
+    public List<NodeIp> getWriteAddressFor(String hash) {
         Message dhtNode = this.send(ServerOperations.getWriteAddress(hash));
-        return dhtNode.getNodeInfo();
+        List<NodeIp> nodeinfo = dhtNode.getNodesIpsList();
+        return nodeinfo;
     }
 
-    public List<NodeInfo> getReadAddressFor(String hash) {
+    public List<NodeIp> getReadAddressFor(String hash) {
         Message dhtNode = this.send(ServerOperations.getReadAddress(hash));
-        return dhtNode.getNodesInfosList();
+        return dhtNode.getNodesIpsList();
     }
 
     public Message send(Message message) {

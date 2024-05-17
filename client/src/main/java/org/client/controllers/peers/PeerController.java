@@ -1,5 +1,6 @@
 package org.client.controllers.peers;
 
+import dht.messages.Status;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.client.controllers.DHTController;
@@ -11,11 +12,7 @@ import org.client.messages.ClientMessage;
 import org.client.crdts.Album;
 import org.client.crdts.base.Operation;
 import org.client.utils.Hasher;
-import org.messages.central.AlbumMessage;
-import org.messages.central.Message;
-import org.messages.central.NodeInfo;
-import org.messages.central.Type;
-import org.messages.dht.Status;
+import org.messages.central.*;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -133,7 +130,7 @@ public class PeerController {
 
             // get sha-1 hash for the file at filepath
             String hash = Hasher.digest(filepath);
-            NodeInfo dht = server.getWriteAddressFor(hash); // get dht node ip:port
+            NodeIp dht = server.getWriteAddressFor(hash).getFirst(); // get dht node ip:port
 
             // write file to dht
             Status result;
@@ -158,10 +155,10 @@ public class PeerController {
 
         public void getFile(String hash, String to) {
 
-            List<NodeInfo> dht = server.getReadAddressFor(hash);
+            List<NodeIp> dht = server.getReadAddressFor(hash);
 
             Status result;
-            for (NodeInfo node : dht) {
+            for (NodeIp node : dht) {
 
                 try {
                     result = DHTController.at(node.getIp(), node.getPort()).getFile(hash, to);
