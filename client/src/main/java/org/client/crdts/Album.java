@@ -4,7 +4,6 @@ import org.client.crdts.base.VersionVector;
 import org.client.crdts.records.FileRecord;
 import org.client.crdts.records.Rating;
 import org.messages.central.AlbumMessage;
-import org.messages.central.Classification;
 import org.messages.central.File;
 import org.messages.p2p.OperationMessage;
 import org.client.crdts.base.Operation;
@@ -34,20 +33,21 @@ public class Album {
             if (o.element.getClass().equals(FileRecord.class)) {
                 return crdts.filesCRDT.addElement(o.operation, (FileRecord) o.element, nodeId);
             }
-            else {
-                return null;
-            }
+            else return null;
         });
 
         operationHandlers.put("removeFile", (o) -> o.element instanceof FileRecord ? crdts.filesCRDT.removeElement(o.operation, (FileRecord) o.element) : null);
-
         operationHandlers.put("addUser", (o) -> o.element instanceof String ? crdts.usersCRDT.addElement(o.operation, (String) o.element, nodeId) : null);
-
         operationHandlers.put("removeUser", (o) -> o.element instanceof String ? crdts.usersCRDT.removeElement(o.operation, (String) o.element) : null);
 
         operationHandlers.put("rate", (o) -> {
-            if (o.element instanceof Rating) {
-                crdts.fileRatingsCRDT.applyIncrementOperation((Rating) o.element);
+            if (o.element instanceof Rating r) {
+                crdts.fileRatingsCRDT.applyIncrementOperation(r);
+
+                if (!crdts.fileVotersCRDT.containsKey(r.fileName())) {
+                    crdts.fileVotersCRDT.put(r.fileName(), new GOSet());
+                }
+                crdts.fileVotersCRDT.get(r.fileName()).applyAddRatingOperation(o);
             }
             return null;
         });
@@ -94,7 +94,7 @@ public class Album {
         }
     }
 
-    public void setVotersCRDT(GOSet votersCRDT) {
+    public void setVotersCRDT(Map<String, GOSet> votersCRDT) {
         this.crdts.fileVotersCRDT = votersCRDT;
     }
 
@@ -102,7 +102,7 @@ public class Album {
         this.crdts.usersCRDT = usersCRDT;
     }
 
-    public GOSet getVotersCRDT() {
+    public Map<String, GOSet> getVotersCRDT() {
         return this.crdts.fileVotersCRDT;
     }
 
@@ -135,18 +135,25 @@ public class Album {
     }
 
     public AlbumMessage toAlbumMessage() {
-        AlbumMessage.Builder b = AlbumMessage.newBuilder();
-        b.addAllUsers(crdts.usersCRDT.elements());
+        AlbumMessage.Builder builder = AlbumMessage.newBuilder();
+        builder.addAllUsers(crdts.usersCRDT.elements());
+
         ArrayList<File> files = new ArrayList<>();
-        List<Classification> classifications = new ArrayList<>();
-        for (FileRecord f : crdts.filesCRDT.elements()){
-            files.add(File.newBuilder()
-                    .setName(f.name())
-                    .setHash(f.hash())
-                    .addAllClassifications(crdts.fileVotersCRDT.getFileRatings(f.name())).build());
+        for (FileRecord f : crdts.filesCRDT.elements()) {
+
+            GOSet votes = crdts.fileVotersCRDT.get(f.name());
+
+            File file = File.newBuilder()
+                            .setName(f.name())
+                            .setHash(f.hash())
+                            .addAllClassifications(votes.getFileRatings())
+                            .build();
+
+            files.add(file);
         }
-        b.addAllFiles(files);
-        return b.build();
+
+        builder.addAllFiles(files);
+        return builder.build();
     }
 
     public byte[] asBytes() throws IOException {
