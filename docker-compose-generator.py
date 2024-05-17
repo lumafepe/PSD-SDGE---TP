@@ -56,7 +56,7 @@ parser = argparse.ArgumentParser(
 
 
 #parser.add_argument('-c', '--clients',choices=range(1, 999),type=int,help='number of clients to create')
-parser.add_argument('-d', '--dht',choices=range(1, 999),type=int,help='number of dht nodes to create',default=1)
+parser.add_argument('-d', '--dht',choices=range(0, 999),type=int,help='number of dht nodes to create',default=1)
 
 args = parser.parse_args()
 
