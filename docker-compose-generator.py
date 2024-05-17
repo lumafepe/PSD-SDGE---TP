@@ -35,6 +35,9 @@ data = {
             'tty': True,
             'networks': [
                 'lost'
+            ],
+            'ports': [
+                '4321:4321'
             ]
         }
     },
@@ -49,7 +52,7 @@ data = {
 parser = argparse.ArgumentParser(
                     prog='docker-compose-generator',
                     description='generates a docker-compose with custom names',
-                    epilog='Perdeste o jogo')
+                    epilog='generator')
 
 
 #parser.add_argument('-c', '--clients',choices=range(1, 999),type=int,help='number of clients to create')
@@ -63,7 +66,8 @@ genNode = lambda x: (f'dhtnode{x}',{
                 'dockerfile': 'Dockerfile'
             },
             'volumes': [
-                f'./configFiles/config_{x}.yml:/config.yml'
+                f'./configFiles/config_{x}.yml:/config.yml',
+                f'./dhtData/dhtnode{x}:/tmp/dht/'
             ],
             'networks': [
                 'lost'

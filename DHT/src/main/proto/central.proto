@@ -6,13 +6,14 @@ option java_multiple_files = true;
 message Message {
   Type type = 1;
   optional UserData user_data = 2;
+  optional Address address = 14;
   optional ErrorReply error_message = 3;
   optional string album_name = 4;
   optional Albums albums = 5;
   optional Album album = 6;
   optional NodeInfo node_info = 7;
   repeated NodeInfo nodes_infos = 8;
-  optional uint64 token = 9;
+  optional string token = 9;
   repeated NodeIp nodes_ips = 10;
   optional NewClient new_client = 11;
   optional bool is_last = 12;
@@ -29,7 +30,7 @@ enum Type {
   ERRORREPLY = 1; // S2C -> error_message
   ALBUMS = 2; // S2C -> albums
   REGISTER = 3; // C2S -> user_data | {SUCESIUM | ERRORREPLY}
-  LOGIN = 4; // C2S -> user_data | {SUCESIUM | ERRORREPLY}
+  LOGIN = 4; // C2S -> {user_data && address} | {SUCESIUM | ERRORREPLY}
   LOGOUT = 5; // C2S -> None | {SUCESIUM | ERRORREPLY}
   ALBUMSLIST = 6; // C2S -> None | ALBUMS
   ALBUMCREATE = 7; // C2S -> album_name | {SUCESIUM | ERRORREPLY}
@@ -42,10 +43,13 @@ enum Type {
   WRITE = 14; // C2S -> token | { ERRORREPLY | NODEIP }
   NODEIP = 15; // S2C -> nodes_ips
   NEWCLIENT = 16; // S2C -> new_client
-  ISLASTREPLY = 17; // S2C -> is_last
-  ISLAST = 18; // C2S -> album_name | {ERRORREPLY | ISLASTREPLY}
-  LEAVE = 19; // C2S -> leave_data | {ERRORREPLY | SUCESIUM}
-  UPDATE = 20; // C2S -> {album_name & album} | {ERRORREPLY | SUCESIUM}
+  LEAVE = 19; // C2S -> {leave_data & album_name & album} | {ERRORREPLY | SUCESIUM}
+  EDITING = 20; // C2S -> album_name | {ERRORREPLY | SUCESIUM}
+}
+
+message Address {
+  string ip = 1;
+  uint32 port = 2;
 }
 
 message UserData {
@@ -69,7 +73,7 @@ message Classification {
 
 message File {
   string name = 1;
-  uint64 hash = 2;
+  string hash = 2;
   repeated Classification classifications = 3;  
 }
 
@@ -86,9 +90,8 @@ message NewClient {
 }
 
 message LeaveData {
-  string name = 1;
-  uint32 clock = 2;
-  uint32 position =3; 
+  uint32 clock = 1;
+  uint32 position =2; 
 }
 
 message Album {
@@ -98,12 +101,12 @@ message Album {
 
 
 message NodeInfo{
-    string ip = 1;
-    uint32 port = 2;
-    repeated uint64 tokens = 3;
+  string ip = 1;
+  uint32 port = 2;
+  repeated string tokens = 3;
 }
 
 message NodeIp{
-    string ip = 1;
-    uint32 port = 2;
+  string ip = 1;
+  uint32 port = 2;
 }

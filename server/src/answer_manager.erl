@@ -55,7 +55,7 @@ parseClient(Username,Ip,Port) ->
 new_client(Socket,Clients,Clock,Position) ->
     % Clock int
     % Clients {Username:{IP,Port}}
-    ParsedClients = lists:map(fun({Username,{Ip,Port}}) ->parseClient(Username,Ip,Port) end,maps:to_list(Clients)),
+    ParsedClients = lists:map(fun({Username,{Ip,Port}}) -> parseClient(Username,Ip,Port) end,maps:to_list(Clients)),
     Reply = messages:encode_msg(#{type=>'NEWCLIENT',new_client=>#{clients=>ParsedClients,clock=>Clock,position=>Position}}, 'Message'),
     gen_tcp:send(Socket,Reply).
 

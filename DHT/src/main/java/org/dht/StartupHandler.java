@@ -18,6 +18,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class StartupHandler implements Runnable {
     private MetadataManager metadataManager;
@@ -31,7 +32,6 @@ public class StartupHandler implements Runnable {
         logger.info("Announcing entry");
         List<NodeInfo> nodes = announceEntry();
         logger.info("Entry announced. Computing servers to contact");
-        System.out.println(nodes);
         Map<Long, InetSocketAddress> serversToContact = computeServersToCopyFrom(nodes);
         logger.info("Transferring data");
         copyData(serversToContact);
@@ -44,7 +44,7 @@ public class StartupHandler implements Runnable {
         Message reply = send(Message.newBuilder()
                             .setType(Type.STARTENTRANCE)
                             .setNodeInfo(NodeInfo.newBuilder()
-                                    .addAllTokens(metadataManager.getMyTokens())
+                                    .addAllTokens(metadataManager.getMyTokens().stream().map(Long::toHexString).collect(Collectors.toSet()))
                                     .setPort(ConfigManager.getInstance().getConfig().getDht().getPort())
                                     .setIp(ConfigManager.getInstance().getConfig().getDht().getAddress())
                                     .build())
@@ -99,7 +99,7 @@ public class StartupHandler implements Runnable {
             List<Long> nodeTokens = new ArrayList<>();
 
             for(int i = 0; i < node.getTokensCount(); i++) {
-                Long token = node.getTokens(i);
+                Long token = Long.parseLong(node.getTokens(i), 16);
                 nodeTokens.add(token);
                 serverTokens.add(token);
                 tokenServerMapping.put(token, address);
@@ -129,7 +129,7 @@ public class StartupHandler implements Runnable {
         send(Message.newBuilder()
                 .setType(Type.ENDENTRANCE)
                 .setNodeInfo(NodeInfo.newBuilder()
-                        .addAllTokens(metadataManager.getMyTokens())
+                        .addAllTokens(metadataManager.getMyTokens().stream().map(Long::toHexString).collect(Collectors.toSet()))
                         .setPort(ConfigManager.getInstance().getConfig().getDht().getPort())
                         .setIp(ConfigManager.getInstance().getConfig().getDht().getAddress())
                         .build())

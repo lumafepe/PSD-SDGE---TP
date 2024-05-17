@@ -1,12 +1,15 @@
 -module(album_manager).
 
--export([start/0, getAlbum/1, writeAlbum/2, addClock/3, getClock/1]).
+-export([start/2, editAlbum/4,leaveAlbum/6]).
 
-start() ->
+start(Name,Username) ->
     Files = #{}, %{Nome:{HASH,{user:valor }}}
     Vectors = #{0=>0}, %{Position : Value}
     AvaiableVectors = sets:new(), % positions
-    loop(Files,Vectors,AvaiableVectors).
+    UsersOnline = #{}, % {Username => {Ip,Porta}}
+    UsersPermission = sets:from_list([Username]),
+    loop(Name,Files,Vectors,AvaiableVectors,UsersOnline,UsersPermission).
+
 
 rpc(PID,Request) ->
     PID ! {Request,self()},
@@ -14,16 +17,12 @@ rpc(PID,Request) ->
         {_, Result} -> Result
     end.
 
-getAlbum(PID) ->
-    rpc(PID,{get}).
-writeAlbum(PID,Files) ->
-    rpc(PID,{write,Files}).
-addClock(PID,Clock,Position) ->
-    rpc(PID,{addClock,Clock,Position}).
-getClock(PID) ->
-    rpc(PID,{getClock}).
-    
 
+leaveAlbum(PID,Username,Clock,Position,NewUsers,_Files) ->
+    rpc(PID,{leave,Username,Clock,Position,NewUsers,_Files}).
+
+editAlbum(PID,Username,Adress,Port) ->
+    rpc(PID,{edit,Username,Adress,Port}).
 
 popSet(Set) ->
     {{X},Y} = sets:fold(
@@ -36,32 +35,64 @@ popSet(Set) ->
     {false,sets:new()},Set),
     {X,Y}.
 
-loop(Files,Vectors,AvaiableVectors) ->
+
+getClock(AvaiableVectors,Vectors) ->
+    NoVectorsFree = sets:is_empty(AvaiableVectors),
+    if 
+        NoVectorsFree ->
+            NewPosition = length(maps:to_list(Vectors)),
+            _Vectors = maps:put(NewPosition,0,Vectors),
+            {_Vectors,AvaiableVectors,0,NewPosition};
+        true ->
+            {Position,_AvaiableVectors} = popSet(AvaiableVectors),
+            {ok,Clock} = maps:find(Position,Vectors),
+            {Vectors,_AvaiableVectors,Clock,Position}
+    end.
+
+
+getUsersRemoved(Old,New) ->
+    sets:subtract(Old,New).
+
+getUsersAdded(Old,New) ->
+    sets:subtract(New,Old).
+
+loop(Name,Files,Vectors,AvaiableVectors,UsersOnline,UsersPermission) ->
     receive
-        {{get}, From} ->
-            From ! {?MODULE, {ok, Files}},
-            loop(Files,#{0=>0},sets:new());
-        {{write,_Files}, From} ->
-            From ! {?MODULE, {ok}},
-            loop(_Files,Vectors,AvaiableVectors);
-        {{addClock,Clock,Position}, From} ->
-            _AvaiableVectors = sets:add_element(position,AvaiableVectors),
+        {{leave,Username,Clock,Position,NewUsers,_Files}, From} ->
+            _AvaiableVectors = sets:add_element(Position,AvaiableVectors),
             _Vectors = maps:update(Position,Clock,Vectors),
+        
+            UsersAdded = getUsersAdded(UsersPermission,sets:from_list(NewUsers)),
+            UsersRemoved = getUsersRemoved(UsersPermission,sets:from_list(NewUsers)),
+            
+            lists:foreach(fun(User) ->account_manager:addAlbum(User,Name) end,sets:to_list(UsersAdded)), 
+            lists:foreach(fun(User) ->account_manager:removeAlbum(User,Name) end,sets:to_list(UsersRemoved)),
+
+            _UsersPermission = sets:subtract(UsersPermission,UsersRemoved),
+            __UsersPermission = sets:union(_UsersPermission,UsersAdded),
+        
+            _UsersOnline = maps:remove(Username,UsersOnline),
             From ! {?MODULE, {ok}},
-            loop(Files,_Vectors,_AvaiableVectors);
-        {{getClock}, From} ->
-            NoVectorsFree = sets:is_empty(AvaiableVectors),
+            loop(Name,_Files,_Vectors,_AvaiableVectors,_UsersOnline,__UsersPermission);
+        
+        {{edit,Username,Adress,Port}, From} ->
+            HasPerm = sets:is_element(Username,UsersPermission),
             if 
-                NoVectorsFree ->
-                    NewPosition = length(maps:to_list(Vectors)),
-                    _Vectors = maps:put(NewPosition,0,Vectors),
-                    From ! {?MODULE, {0,NewPosition}},
-                    loop(Files,_Vectors,AvaiableVectors);
+                HasPerm ->
+                    _UsersOnline = maps:put(Username,{Adress,Port},UsersOnline),
+                    _Online = maps:values(UsersOnline),
+                    if
+                        _Online == [] ->
+                            From ! {?MODULE, {files, Files,sets:to_list(UsersPermission)}},
+                            loop(Name,Files,#{0=>0},sets:new(),_UsersOnline,UsersPermission);
+                        true ->
+                            {_Vectors,_AvaiableVectors,Clock,Position} = getClock(AvaiableVectors,Vectors),
+                            From ! {?MODULE, {online, UsersOnline,Clock,Position}},
+                            loop(Name,Files,_Vectors,_AvaiableVectors,_UsersOnline,UsersPermission)
+                    end;
                 true ->
-                    {Position,_AvaiableVectors} = popSet(AvaiableVectors),
-                    {ok,Clock} = maps:find(Position,Vectors),
-                    From ! {?MODULE, {Clock,Position}},
-                    loop(Files,Vectors,_AvaiableVectors)
+                    From ! {?MODULE, {error, "User doesn't have permission"}},
+                    loop(Name,Files,Vectors,AvaiableVectors,UsersOnline,UsersPermission)
             end
     end.
 

@@ -12,7 +12,7 @@ authenticate(Socket) ->
             Msg = messages:decode_msg(Bin,'Message'),
             case maps:get(type,Msg) of
                 'REGISTER' -> registerHandler(Socket, maps:get(user_data,Msg));
-                'LOGIN' -> loginHandler(Socket, maps:get(user_data,Msg));
+                'LOGIN' -> loginHandler(Socket, maps:get(user_data,Msg),maps:get(address,Msg));
                 'STARTENTRANCE' -> startEntranceHandler(Socket, maps:get(node_info,Msg));
                 'ENDENTRANCE' -> endEntranceHandler(Socket, maps:get(node_info,Msg));
                 _ ->
@@ -40,14 +40,16 @@ registerHandler(Socket, Data) ->
     end.
 
 
-loginHandler(Socket, Data) ->
-    Username = maps:get(username, Data),
-    Password = maps:get(password, Data),
-    case account_manager:login(Username, Password) of
+loginHandler(Socket, UserData,UserAddress) ->
+    Username = maps:get(username, UserData),
+    Password = maps:get(password, UserData),
+    Ip = maps:get(ip,UserAddress),
+    Port = maps:get(port,UserAddress),
+    case account_manager:login(Username, Password,Ip,Port) of
         {ok} ->
             io:fwrite("Logged in user: ~p.\n", [Username]),
             answer_manager:success(Socket),
-            client_manager:loop(Socket,Username), % authenticated area
+            client_manager:loop(Socket,none,Username), % authenticated area
             authenticate(Socket);
         {error, TypeError, ErrorMsg} ->
             case TypeError of % tipos de erro possíveis de login
