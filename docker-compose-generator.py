@@ -10,7 +10,7 @@ except:
 
 getConfig = lambda x : {
     "dht":{
-        "address": f'dhtnode{x}',
+        "address": f"192.168.32.{3+x}",
         "port": 4200,
         "baseDirectory": "/tmp/dht/",
         "tokenCount": 20,
@@ -69,9 +69,11 @@ genNode = lambda x: (f'dhtnode{x}',{
                 f'./configFiles/config_{x}.yml:/config.yml',
                 f'./dhtData/dhtnode{x}:/tmp/dht/'
             ],
-            'networks': [
-                'lost'
-            ],
+            'networks': {
+                'lost':{
+                    'ipv4_address' : f"192.168.32.{3+x}"
+                }
+            },
             'depends_on': ['central_server'] + [f'dhtnode{i}' for i in range(x)]
         })
 
