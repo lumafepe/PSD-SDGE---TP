@@ -62,6 +62,7 @@ public class Router extends Thread {
                     ClientMessage leaveMessage = new ClientMessage("leave", null, null, this.bindPort, -1, -1, this.broadcaster.getVersion(), null);
                     try {
                         this.network.loopSend(leaveMessage.asBytes());
+                        this.peerManagementController.setIsLeaving(true);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }

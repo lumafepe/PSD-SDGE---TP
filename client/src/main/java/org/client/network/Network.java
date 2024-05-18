@@ -19,16 +19,21 @@ public class Network {
     private List<String> users = new ArrayList<>();
     private String myIdentity;
 
+    private ZMQ.Poller poller;
+
     public Network(String identity, String bindPort, List<String> users) {
         this.myIdentity = identity; // Just For debugging
         this.router = ctx.createSocket(SocketType.ROUTER);
-        this.router.setIdentity(identity.getBytes());
         this.router.bind(Network.BASE_ADDRESS + bindPort);
+        this.router.setIdentity(this.myIdentity.getBytes());
+
+        poller = ctx.createPoller(1);
+        poller.register(router, ZMQ.Poller.POLLIN);
 
         this.users = users;
 
         for (String user : this.users){
-            router.connect(Network.BASE_ADDRESS + user);
+            connect(user);
         }
     }
 
@@ -59,8 +64,7 @@ public class Network {
     public void addUser(String port) {
         if (!this.users.contains(port)) {
             this.users.add(port);
-            router.connect(Network.BASE_ADDRESS + port);
-
+            connect(port);
         }
     }
 
@@ -71,12 +75,36 @@ public class Network {
         }
     }
 
+    public void connect(String other){
+        this.router.connect(Network.BASE_ADDRESS + other);
+        boolean connected = false;
+        while (!connected){
+            router.sendMore(other.getBytes());
+            router.sendMore("");
+            router.send("/showAlbum");
+            int events = poller.poll(100); // Wait for 1 second
+            if (events > 0) {
+                if (poller.pollin(0)) {
+                    // Receive the acknowledgment
+                    String address = router.recvStr();
+                    router.recvStr(); // Empty delimiter
+                    String response = router.recvStr();
+
+                    if (response != null) {
+                        connected = true;
+                        System.out.println("Connected to " + other);
+                    }
+                }
+            }
+        }
+
+    }
+
     public int size() {
         return users.size();
     }
 
     public IncomingMessage recv() {
-
         byte[] identity = this.router.recv(0);
         this.router.recv(0); // discard message delimiter
         byte[] data = this.router.recv(0);
