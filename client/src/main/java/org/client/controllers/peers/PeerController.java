@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.client.controllers.DHTController;
 import org.client.controllers.server.ServerController;
+import org.client.crdts.GOSet;
 import org.client.crdts.records.FileRecord;
 import org.client.crdts.records.Rating;
 import org.client.network.Broadcaster;
@@ -225,15 +226,20 @@ public class PeerController {
 
         public void rate(String username, String filename, String value) {
 
-            if (!crdts.getVotersCRDT().canRate(username)) {
+            if (!crdts.getVotersCRDT().containsKey(filename)) {
+                logger.debug(String.format("added new entry on voters crdt for filename '%s'", filename));
+                crdts.getVotersCRDT().put(filename, new GOSet()); // insert new goset for this filename
+            }
+
+            GOSet votes = crdts.getVotersCRDT().get(filename);
+            if (!votes.canRate(username)) {
                 logger.debug(String.format("blocked user '%s' from rating file '%s'", username, filename));
                 return; // if user already voted, then ignore rate request for filename
             }
 
             int rateValue = Integer.parseInt(value);
-
             crdts.getFileRatingsCRDT().increment(filename, rateValue); // rate the file by incrementing the counter
-            Operation<Rating> op = crdts.getVotersCRDT().addRating(filename, username, crdts.getFileRatingsCRDT().getValue(filename)); // set user as already voted in the GOSet
+            Operation<Rating> op = votes.addRating(filename, username, crdts.getFileRatingsCRDT().getValue(filename)); // set user as already voted in the GOSet
 
             try { broadcaster.broadcast(op); } catch (IOException e) { throw new RuntimeException(e); }
         }

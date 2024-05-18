@@ -3,11 +3,9 @@ package org.client.controllers.peers;
 import org.client.controllers.server.ServerController;
 import org.client.crdts.*;
 import org.client.crdts.records.FileRecord;
-import org.client.crdts.records.Rating;
 import org.client.network.Broadcaster;
 import org.client.network.Network;
 import org.client.messages.ClientMessage;
-import org.client.utils.VectorClock;
 import org.messages.central.*;
 
 import java.io.IOException;
@@ -16,6 +14,7 @@ import java.util.*;
 public class PeerManagementController {
     private static final List<String> peerMessages = Arrays.asList(
             "join", "informJoin", "state", "leave", "forward", "leaveAck");
+
     private Network network;
     private Album album;
     private String identity;
@@ -113,32 +112,28 @@ public class PeerManagementController {
             AlbumMessage album = reply.getAlbum();
 
             // Get users
-            List<String> users = new ArrayList<>();
-            for (String u : album.getUsersList()){
-                users.add(u);
-            }
+            List<String> users = new ArrayList<>(album.getUsersList());
             this.album.setUsers(users, this.identity);
 
             // Get files
             GCounter gc = new GCounter();
-            GOSet goset = new GOSet();
+            Map<String, GOSet> voters = new HashMap<>();
             List<FileRecord> files = new ArrayList<>();
-            for (File f : album.getFilesList()){
+
+            for (File f : album.getFilesList()) {
                 files.add(new FileRecord(f.getName(), f.getHash()));
+                voters.put(f.getName(), new GOSet());
+
                 // counters for classifications
                 for (Classification c : f.getClassificationsList()){
-                    gc.increment(f.getName(), c.getValue());
-                    goset.addRating(f.getName(), c.getUsername(), c.getValue());
+                    gc.increment(f.getName(), c.getValue()); // Increment the rating on the crdt
+                    voters.get(f.getName()).addRating(f.getName(), c.getUsername(), c.getValue()); // set the rate operation onto the crdt
                 }
             }
+
             this.album.setFiles(files, this.identity);
-
-            // Get ratings
-            // Gcounter
             this.album.setFileRatingsCRDT(gc);
-
-            // GoSet
-            this.album.setVotersCRDT(goset);
+            this.album.setVotersCRDT(voters);
         }
 
         // When he is not the first in the session
