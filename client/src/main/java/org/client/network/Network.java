@@ -61,6 +61,12 @@ public class Network {
         router.send(data, 0);
     }
 
+    public void send(byte[] data, byte[] identity){
+        router.sendMore(identity);
+        router.sendMore("");
+        router.send(data, 0);
+    }
+
     public void addUser(String port) {
         if (!this.users.contains(port)) {
             this.users.add(port);
@@ -81,7 +87,7 @@ public class Network {
         while (!connected){
             router.sendMore(other.getBytes());
             router.sendMore("");
-            router.send("/showAlbum");
+            router.send("/hello");
             int events = poller.poll(100); // Wait for 1 second
             if (events > 0) {
                 if (poller.pollin(0)) {

@@ -14,6 +14,7 @@ import org.client.controllers.server.ServerController;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Router extends Thread {
 
@@ -47,8 +48,13 @@ public class Router extends Thread {
     }
 
     private void routeMessage(IncomingMessage message) throws IOException {
-
         String messageData = new String(message.data());
+        if (messageData.equals("/hello")){
+            this.network.send("helloACK".getBytes(), message.identity());
+            return;
+        }
+        if (messageData.equals("helloACK"))
+            return;
         if (this.server.handles(messageData)) {
             if (messageData.startsWith("/leaveAlbum") && this.network.totalUsers() != 0){
                 // Check if it can leave
