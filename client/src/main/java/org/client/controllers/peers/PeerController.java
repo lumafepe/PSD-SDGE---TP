@@ -198,8 +198,8 @@ public class PeerController {
         }
 
         public void removeFile(String filename) {
-
-            Operation<String> o = new Operation<>("removeFile", filename);
+            FileRecord fr = new FileRecord(filename, this.getHashFromFilename(filename));
+            Operation<FileRecord> o = new Operation<>("removeFile", fr);
             Operation<FileRecord> crdtsOp = crdts.handleOperation(o);
 
             try { broadcaster.broadcast(crdtsOp); }
