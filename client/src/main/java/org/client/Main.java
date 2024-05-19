@@ -7,19 +7,12 @@ import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
-
         Sender router = Sender.getInstance();
-        Map<String, String> env = System.getenv();
 
         String identity,address;
+        identity = args[0];
 
-        if (args.length > 0) {
-            identity = args[0];
-        } else {
-            identity = env.getOrDefault("ID", "defaultID");
-        }
-
-        address = env.getOrDefault("IP", "172.25.0.2"); // todo: Not hardcode IP
+        address = "localhost";
 
         router.setIdentity(identity);
         router.setAddress(address);

@@ -146,7 +146,7 @@ public class Album {
             File file = File.newBuilder()
                             .setName(f.name())
                             .setHash(f.hash())
-                            .addAllClassifications(votes.getFileRatings())
+                            .addAllClassifications(votes != null ? votes.getFileRatings() : new ArrayList<>())
                             .build();
 
             files.add(file);
