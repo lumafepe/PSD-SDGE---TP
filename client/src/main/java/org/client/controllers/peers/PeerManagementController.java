@@ -83,7 +83,7 @@ public class PeerManagementController {
                     this.isLeaving = false;
                 }
                 //this.broadcaster.addWaitingMsg(message.vc());
-                ClientMessage leaveAck = new ClientMessage("leaveAck", null, null, null, -1, -1, null, null);
+                ClientMessage leaveAck = new ClientMessage("leaveAck", null, null, this.identity, -1, -1, null, null);
                 this.network.send(leaveAck.asBytes(), message.identity());
             }
             case "leaveAck" -> {
