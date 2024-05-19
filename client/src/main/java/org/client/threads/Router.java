@@ -13,6 +13,7 @@ import org.client.network.Network;
 import org.client.controllers.server.ServerController;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -49,6 +50,7 @@ public class Router extends Thread {
 
     private void routeMessage(IncomingMessage message) throws IOException {
         String messageData = new String(message.data());
+        //System.out.println("Received message: " + new String(message.identity(), StandardCharsets.UTF_8) + " -> " + messageData);
         if (messageData.equals("/hello")){
             this.network.send("helloACK".getBytes(), message.identity());
             return;

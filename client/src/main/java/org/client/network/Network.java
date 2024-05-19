@@ -6,6 +6,7 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,9 +50,17 @@ public class Network {
 
     public void loopSend(byte[] data) {
         for (String identity : this.users) {
+            /*if (this.myIdentity.equals("7002") && identity.equals("7000")) {
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }*/
             router.sendMore(identity.getBytes());
             router.sendMore("");
             router.send(data, 0);
+            //System.out.println("Message sent to: "  + identity);
         }
     }
 
@@ -88,7 +97,7 @@ public class Network {
             router.sendMore(other.getBytes());
             router.sendMore("");
             router.send("/hello");
-            int events = poller.poll(100); // Wait for 1 second
+            int events = poller.poll(500); // Wait for 1 second
             if (events > 0) {
                 if (poller.pollin(0)) {
                     // Receive the acknowledgment
