@@ -8,26 +8,31 @@ str2Hash(Str) ->
 binary_search(List, _, Low, High) when Low > High -> lists:nth(1, List) ;  % If low > high, return first.
 binary_search(List, Value, Low, High) ->
     Mid = Low + ((High - Low) div 2),
-    Val = str2Hash(lists:nth(Mid+1, List)),
+    Val = str2Hash(lists:nth(Mid, List)),
     if 
-        Val >= Value ->
+        Low == High ->
             if 
-                Mid == 0 ->
-                    if
-                        Val==Value -> lists:nth(Mid+1, List);
-                        true -> binary_search(List, Value, Low, Mid - 1)
-                    end;
-                true ->
-                    Prev = str2Hash(lists:nth(Mid, List)),
-                    if 
-                        ( Val==Value or (Prev < Value)) -> 
-                            lists:nth(Mid+1, List);
-                        true ->
-                            binary_search(List, Value, Low, Mid - 1)
-                    end
+                Val == Value -> lists:nth(Mid, List);
+                true -> lists:nth(1, List)
             end;
         true ->
-            binary_search(List, Value, Mid + 1, High)
+            if 
+                Val >= Value ->
+                    if 
+                        Mid == 1 ->
+                            lists:nth(Mid, List);
+                        true ->
+                            Prev = str2Hash(lists:nth(Mid-1, List)),
+                            if 
+                                ( Val==Value or (Prev < Value)) -> 
+                                    lists:nth(Mid, List);
+                                true ->
+                                    binary_search(List, Value, Low, Mid-1)
+                            end
+                    end;
+                true ->
+                    binary_search(List, Value, Mid+1, High)
+            end
     end.
     
 
@@ -38,7 +43,7 @@ findNearest(Hashdict, Hash, Write) ->
             not sets:is_empty(Selected)
         end
     ,Hashdict),
-    binary_search(orddict:fetch_keys(_Hashdict), str2Hash(Hash), 0, orddict:size(_Hashdict)-1).
+    binary_search(orddict:fetch_keys(_Hashdict), str2Hash(Hash), 1, orddict:size(_Hashdict)).
 
 
 
