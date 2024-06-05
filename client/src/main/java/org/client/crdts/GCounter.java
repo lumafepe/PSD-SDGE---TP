@@ -31,6 +31,9 @@ public class GCounter implements Serializable {
         String filename = r.fileName();
         int rating = r.rating();
 
-        this.values.put(filename, this.values.get(filename) + rating);
+        if (this.values.containsKey(filename)) {
+            this.values.put(filename, this.values.get(filename) + rating);
+        }
+        this.values.put(filename, rating);
     }
 }

@@ -50,9 +50,9 @@ public class Network {
 
     public void loopSend(byte[] data) {
         for (String identity : this.users) {
-            /*if (this.myIdentity.equals("7002") && identity.equals("7000")) {
+            /*if (this.myIdentity.equals("7000") && identity.equals("7002")) {
                 try {
-                    Thread.sleep(2000);
+                    Thread.sleep(20000);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
