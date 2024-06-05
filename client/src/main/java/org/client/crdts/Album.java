@@ -41,14 +41,13 @@ public class Album {
         operationHandlers.put("removeUser", (o) -> o.element instanceof String ? crdts.usersCRDT.removeElement(o.operation, (String) o.element) : null);
 
         operationHandlers.put("rate", (o) -> {
-            if (o.element instanceof Rating r) {
-                crdts.fileRatingsCRDT.applyIncrementOperation(r);
-
-                if (!crdts.fileVotersCRDT.containsKey(r.fileName())) {
-                    crdts.fileVotersCRDT.put(r.fileName(), new GOSet());
-                }
-                crdts.fileVotersCRDT.get(r.fileName()).applyAddRatingOperation(o);
+            Rating r = new Rating(o.user, o.fileName, o.rating);
+            if (!crdts.fileVotersCRDT.containsKey(r.fileName())) {
+                crdts.fileVotersCRDT.put(r.fileName(), new GOSet());
             }
+            crdts.fileVotersCRDT.get(r.fileName()).applyAddRatingOperation(o);
+            crdts.fileRatingsCRDT.applyIncrementOperation(r);
+
             return null;
         });
 
